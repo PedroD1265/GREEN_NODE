@@ -1,0 +1,413 @@
+ACT AS: Lead Product Designer + Mobile UX + Design Systems Expert + Prototyping Specialist.
+MODEL: Claude Opus 4.6
+TASK: Create a complete, polished, DEMO-only mobile-first Figma file for an app called “GREEN NODE” (Cochabamba, Bolivia). The app connects waste generators (users: hogares/comercios) with verified collectors (independent collectors or companies). The AI assistant (“GREEN”) is the CORE interaction: it identifies waste by photos, validates user input, builds pickup cases, recommends collectors based on published tariffs, and answers recycling questions using curated data.
+
+CRITICAL (optimize AI credits):
+- Do NOT ask clarifying questions. Assume sensible DEMO defaults if needed.
+- Keep scope EXACTLY to what’s listed. Do NOT create extra features or screens beyond requirements.
+- Everything is DEMO: fake data, fake users, fake offers, fake rewards. No real payments. No real legal validation—only UI/UX flows.
+- Create clean components and reuse them. Avoid unnecessary variants.
+- Produce a working clickable prototype for the specified flows only.
+
+LANGUAGE: Spanish (Bolivia).
+DEVICE FRAME: iPhone 13/14 (390×844).
+GRID: 8pt spacing system; safe margins 16.
+ICON STYLE: simple rounded outline icons (consistent stroke). No heavy illustrations.
+TONE: friendly, direct, “Cochabamba local”, non-robotic microcopy.
+
+────────────────────────────────────────
+A) VISUAL STYLE + COLOR STUDY (apply strictly)
+Brand keywords: sostenible, confiable, práctico, seguro, motivador.
+
+LIGHT MODE ONLY (for MVP).
+Use this palette (WCAG-friendly contrast; avoid low-contrast text):
+
+PRIMARY (Green) – Sustainability + core brand
+- Primary 700: #0B3D2E (headers, primary emphasis)
+- Primary 600: #0F5132 (primary buttons)
+- Primary 500: #146C43 (active states)
+- Primary 100: #DFF3E7 (soft highlights)
+
+SECONDARY (Teal/Blue) – Trust + safety + logistics
+- Secondary 600: #0B5D6B
+- Secondary 100: #D6F2F5
+
+ACCENT (Amber) – Rewards/puntos
+- Accent 600: #C77D00
+- Accent 100: #FFF2CC
+
+NEUTRALS (UI foundation)
+- Background: #F7F8FA
+- Surface: #FFFFFF
+- Text Primary: #111827
+- Text Secondary: #4B5563
+- Border: #E5E7EB
+
+SEMANTIC STATUS
+- Success: #16A34A (Reciclable ✅, completado)
+- Warning: #F59E0B (Especial 🧱 / cuidado)
+- Danger: #DC2626 (Peligroso ⚠️ / errores)
+- Info: #2563EB (notificaciones / tips)
+
+MATERIAL BUCKET COLORS (chips + badges)
+- Reciclable ✅: Success (#16A34A)
+- Biodegradable 🌿: Primary 500 (#146C43) but lighter chip background
+- No aprovechable 🗑️: Neutral grey (#6B7280) + grey background
+- Peligroso ⚠️: Danger (#DC2626)
+- Especial 🧱: Warning (#F59E0B)
+
+TYPOGRAPHY
+- Font: Inter
+- H1 24/32 semibold, H2 20/28 semibold, H3 16/24 semibold
+- Body 14/20 regular, Caption 12/16 regular
+
+RADIUS
+- Cards: 16
+- Buttons: 14
+- Chips: 999
+
+SHADOWS
+- Level 1: subtle for cards
+- Level 2: modals / floating panels
+
+────────────────────────────────────────
+B) FILE STRUCTURE (Pages) – create exactly these pages
+1) 00_Cover-HowToDemo
+2) 01_Tokens-Styles
+3) 02_Components
+4) 10_User-Mode
+5) 20_Collector-Mode
+6) 30_Prototype-Flows
+7) 40_Demo-Data
+
+────────────────────────────────────────
+C) COCHABAMBA/BOLIVIA WASTE CATEGORIES (curated defaults)
+Represent 5 buckets clearly with icons and microcopy “puede variar según recolector/zona”:
+
+1) Reciclables ✅
+- Papel/Cartón (seco)
+- Plásticos (PET/HDPE/PP; en UI simplificar como: PET, Plástico rígido, Plástico blando)
+- Vidrio
+- Metales (Aluminio, Acero/chatarra)
+
+2) Biodegradables 🌿
+- Restos de cocina (cáscaras, frutas/verduras)
+- Residuos vegetales/jardín
+
+3) No aprovechables 🗑️ (Desecho)
+- Papel higiénico, toallas higiénicas
+- Envolturas de snacks, bolsas nylon, celofán
+- Platos/vasos/utensilios desechables, sorbetes
+- Residuos de barrido
+- Tetra Pak: POR DEFECTO “No aprovechable (puede variar si un recolector especializado lo acepta)”
+
+4) Peligrosos domiciliarios ⚠️
+- Pilas/baterías
+- Electrónicos (RAEE)
+- Envases de pintura/insecticidas
+- Medicamentos
+
+5) Especiales 🧱
+- Voluminosos: muebles, llantas, escombros pequeños (manejo aparte)
+
+────────────────────────────────────────
+D) CORE PRODUCT RULES (must be reflected in UI)
+1) Exact address is allowed and required for pickup, BUT:
+   - Address details are only visible to the SELECTED + VERIFIED collector.
+   - Before assignment, show “Dirección protegida”.
+2) Collectors publish tariffs (Bs/kg by material) and pickup windows.
+3) AI recommends best collector options based on:
+   - price, pickup day/time, distance, rating, acceptance of material, efficiency.
+4) Two creation modes:
+   - Manual (step screens)
+   - AI chat-first (conversational wizard)
+5) Case confirmation and trust:
+   - AI can mark “Confirmado por IA” if photos match the declared material/quantity (demo).
+   - Collector ALWAYS confirms at pickup.
+6) Completion requires a 4-digit PIN:
+   - User shows PIN to collector; collector enters it to close case.
+   - Optionally attach photo evidence (demo).
+7) Reputation system:
+   - User levels: Bronce / Plata / Oro (demo logic).
+   - Low-rated users trigger “manual review / accept / reject” for collectors.
+8) Collector auto-accept:
+   - Collector can toggle Auto-aceptar (ON/OFF).
+   - If ON: trusted users get instant scheduled pickup confirmation.
+   - If OFF: collector reviews requests first.
+
+────────────────────────────────────────
+E) DESIGN SYSTEM (01_Tokens-Styles)
+Create Variables/Tokens for:
+- Colors (all above)
+- Typography styles
+- Spacing scale 4/8/12/16/24/32
+- Radius 8/12/16/24/999
+- Shadows (2)
+Create text styles and color styles mapped to variables.
+
+────────────────────────────────────────
+F) COMPONENT LIBRARY (02_Components) – build reusable components with minimal variants
+Required components:
+1) AppBar (title + optional mode badge + optional points chip)
+2) Bottom Nav (User): Inicio / IA / Casos / Recompensas
+3) Buttons: primary / secondary / ghost (states: default, disabled, loading)
+4) Chips: buckets + material types + quick replies
+5) Cards:
+   - Case card (status, materials summary, schedule)
+   - Collector offer card (tariffs preview, rating, pickup window, verified badge, AI recommended tag)
+   - Reward card (required points, “te faltan X”, redeem demo)
+   - Center/Acopio card (materials accepted, hours, location snippet)
+6) Status badges:
+   - Pendiente / Aceptado / En camino / Completado
+   - Confirmado por IA
+   - Verificado (Recolector)
+7) Timeline stepper for case tracking
+8) Modal:
+   - PIN reveal
+   - Confirm actions
+9) AI Result Panel:
+   - Detected item, bucket, confidence meter, quality notes, tips, actions
+10) Photo capture placeholders:
+   - “Frontal / Lateral / Arriba / Detalle”
+   - Photo quality check states: OK / Retake
+11) Case Receipt Summary (structured summary):
+   - materials, estimated kg, photos count, incentive type, chosen collector, pickup time, address state
+12) Map placeholder (mock) + route list
+
+────────────────────────────────────────
+G) USER MODE SCREENS (10_User-Mode) – create EXACTLY these screens
+U0) Mode Select (DEMO)
+- Two big buttons: Entrar como Usuario / Entrar como Recolector
+
+U1) Usuario Home
+- Points balance + user level (Bronce/Plata/Oro)
+- Quick actions: “Crear pedido” / “¿Esto se recicla?” / “Recompensas”
+- Last case preview + status
+- Big CTA: “Hablar con GREEN (IA)”
+
+U2) IA Hub (Chat Home)
+- Chat header + 3 large intent buttons:
+  1) “Crear pedido de recojo”
+  2) “¿Esto se recicla?”
+  3) “Precios y centros de acopio”
+- Quick replies chips for common materials (PET, Cartón, Vidrio, Lata)
+
+U3) “¿Esto se recicla?” – Guided Photos
+- Instruction cards (frontal/lateral/arriba/detalle)
+- Tips: “Fondo limpio, buena luz, que se vea solo el material”
+- Upload placeholders + “Analizar con IA”
+
+U4) AI Result
+- AI Result Panel:
+  - material detected (e.g., “Cartón seco”)
+  - bucket (Reciclable ✅ / Desecho 🗑️ / Peligroso ⚠️ / Especial 🧱 / Biodegradable 🌿)
+  - confidence (0–1)
+  - quality note (limpio/sucio/mezclado)
+  - tips
+- CTA rules:
+  - If Reciclable: “Crear pedido de recojo”
+  - If Desecho: “Marcar como desecho”
+  - If Peligroso/Especial: “Ver manejo especial” (go to U11)
+
+U5) Create Case – AI-guided conversational wizard
+- Chat-like UI + structured “receipt summary” sidebar/panel
+Steps:
+  1) material(s)
+  2) approximate quantity (kg/bolsa/unidades) with quick ranges
+  3) guided photos (re-use component)
+  4) AI estimates kg + asks confirm/edit (editable inline)
+  5) schedule: user chooses or AI proposes 2 pickup windows (DEMO)
+  6) address input (exact): street + number + references + map pin (mock)
+  - Show “Dirección protegida hasta asignación”
+
+U6) Incentive Choice
+- Two big cards:
+  - “Efectivo (pago al recoger)”
+  - “Puntos (canje en recompensas)”
+- Explain in 2 lines each
+- Continue button
+
+U7) Collector Offers (if Efectivo)
+- List 3 offers (cards) with:
+  - Verified badge
+  - Rating + completed pickups
+  - Pickup window options
+  - Tariffs Bs/kg per material
+  - “AI Recomendado” tag for 1 best option
+- User selects one → confirm
+
+U7b) Auto-Assign (if Puntos)
+- AI assigns “Recolector más eficiente”
+- Show pickup window + “por qué” (distance/route/accepts material)
+- Confirm screen
+
+U8) Case Status (tracking)
+- Timeline: Pendiente → Aceptado → En camino → Completado
+- Collector mini profile + contact (demo)
+- Address visibility line:
+  - “Compartida con recolector verificado ✅”
+- Button: “Ver PIN” appears when En camino or Aceptado
+
+U9) PIN Reveal + Close Case
+- Show 4-digit PIN large + instruction “Entregar al recolector”
+- Confirmation card with:
+  - points earned OR payout estimate
+  - photos evidence placeholder
+- After completion: rating screen (rate collector + report issues)
+
+U10) Recompensas (Rewards Store)
+- Points balance + progress bar
+- Catalog with coherent Cochabamba rewards (DEMO):
+  1) Recarga móvil (Entel/Tigo/Viva) – low points
+  2) Cupón tienda/supermercado (Bs) – mid points
+  3) Café/snack – low-mid points
+  4) Bolsa reutilizable – mid points
+  5) Botella térmica – higher points
+  6) Abono/compost – mid points
+  7) “Crédito $10 (demo premium)” – high points
+- Each card: required points + “te faltan X” + redeem demo
+
+U11) Manejo Especial + Centros/Acopio (curated demo)
+- Tabs:
+  - “Centros de acopio”
+  - “Peligrosos/Especiales”
+  - “Precios”
+- Centers list (DEMO) with:
+  - accepted materials
+  - hours
+  - map snippet
+- Prices view:
+  - show “precios referenciales” derived from collector tariffs
+- Include microcopy “verifica condiciones por recolector/zona”.
+
+U12) Manual Case Creation (step screens) – compact
+- Step 1: Select bucket/material
+- Step 2: Quantity + photos
+- Step 3: Schedule + address
+- Step 4: Incentive + offers (same logic)
+- Step 5: Confirm summary and submit
+
+────────────────────────────────────────
+H) COLLECTOR MODE SCREENS (20_Collector-Mode) – create EXACTLY these screens
+R1) Collector Home Dashboard
+- Today pickups count, pending requests, rating, earnings/points (demo)
+- CTA: “Ver solicitudes”
+- Toggle: Auto-aceptar ON/OFF (visible)
+
+R2) Onboarding Step 1 – Choose type
+- Independiente / Empresa
+
+R3) Onboarding Independiente – Seguridad (DEMO UI)
+Fields:
+- CI + photo upload
+- Selfie verification (placeholder)
+- Phone verification (demo)
+- Vehicle photo + plate
+- Driver license photo
+- Operating zone (select map area mock)
+- Materials accepted toggles
+- Pickup windows schedule
+- Tariffs editor Bs/kg per material
+- Submit → status “Verificación pendiente (DEMO)” then “Verificado ✅ (DEMO)”
+
+R4) Onboarding Empresa – Seguridad (DEMO UI)
+Fields:
+- Razón social
+- NIT (optional)
+- Representative CI + photo
+- Drivers list (name + license)
+- Vehicles list (plate + photo)
+- Operating zone
+- Materials accepted
+- Pickup windows
+- Tariffs Bs/kg
+- Submit → verified demo
+
+R5) Requests List
+- Cards show:
+  - materials summary + estimated kg
+  - “Confirmado por IA” badge if applicable
+  - user level (Bronce/Plata/Oro) + warning if low trust
+  - exact address (visible only because collector is verified)
+  - pickup window
+  - expected payout
+- Sorting: nearest / best value / time window
+
+R6) Request Detail
+- Photos gallery (frontal/lateral/arriba/detalle)
+- Declared vs AI-estimated kg
+- Notes: quality flags
+- Actions:
+  - Accept (always)
+  - Reject (ONLY if user trust is low OR collector has manual review ON)
+  - “Iniciar ruta”
+
+R7) Route (mock map)
+- Map placeholder + stops list
+- Buttons: “En camino” / “Llegué”
+
+R8) Pickup Confirmation
+- Enter 4-digit PIN
+- Photo evidence upload (optional)
+- Complete case → payout/puntos summary
+
+R9) Rate User + Report Issues
+- rate user (1–5)
+- issue tags: material incorrecto / sucio / mezclado / cantidad falsa
+- this affects user trust level (demo explanation)
+
+R10) Collector Profile
+- Verified badge
+- Materials accepted
+- Tariffs Bs/kg
+- Schedule windows
+- Auto-accept toggle
+- Past pickups list
+
+────────────────────────────────────────
+I) DEMO DATA (40_Demo-Data) – provide visual tables + seed content
+Create:
+1) Collectors table (3 items):
+- “Recolector A (Independiente)” – accepts PET/cartón; rating 4.6; tariffs; windows
+- “Recolector B (Independiente)” – accepts vidrio/aluminio; rating 4.4; tariffs; windows
+- “EcoCocha (Empresa)” – accepts mixed recyclables; rating 4.8; tariffs; windows; auto-accept ON
+Include Bs/kg tariffs demo (coherent relative pricing):
+- Cartón: low
+- PET: low-mid
+- Vidrio: low-mid
+- Aluminio: high
+- Acero/chatarra: mid
+(Exact numbers can be DEMO but must reflect relative reality: aluminio > acero > PET/cartón.)
+
+2) Materials-to-bucket mapping table (at least 10 examples) + tips.
+
+3) Points rules table:
+- PET +2, vidrio +3, aluminio +5, cartón +1
+- penalty -5 if mislabeled; bonus +10% if “limpio y separado” (demo)
+
+4) Rewards catalog (7 items) with point costs.
+
+5) Cases table (6 cases) with different statuses.
+
+────────────────────────────────────────
+J) PROTOTYPE (30_Prototype-Flows) – wire ONLY these flows
+Flow A (User AI-guided):
+U0 → U1 → U2 → U5 → U6 → (U7 or U7b) → U8 → U9 → U10
+
+Flow B (User “¿Esto se recicla?”):
+U1 → U2 → U3 → U4 → (U5 or U11)
+
+Flow C (User Manual):
+U1 → U12 → U6 → (U7 or U7b) → U8 → U9
+
+Flow D (Collector):
+U0 → R2 → R3/R4 → R1 → R5 → R6 → R7 → R8 → R9 → R10
+
+00_Cover-HowToDemo must include:
+- 5 bullet steps to demo User AI flow
+- 5 bullet steps to demo Collector flow
+- Note: “Todo es DEMO”
+
+OUTPUT REQUIREMENT:
+Deliver a cohesive design system, reusable components, complete screens for both modes, realistic Cochabamba context, and a clickable prototype. Keep the file organized and easy for handoff to Replit dev.
+END.
