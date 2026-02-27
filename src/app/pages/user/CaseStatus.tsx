@@ -4,11 +4,12 @@ import { useApp } from '../../../context/AppContext';
 import { Button, Card, Badge, TimelineStepper } from '../../components/UI';
 import { ArrowLeft, Phone, MessageSquare, Shield, Key, Star, MapPin, Camera } from 'lucide-react';
 import { COLLECTORS } from '../../../data/mockData';
+import { toast } from 'sonner';
 
 export default function CaseStatus() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { cases, updateCaseStatus, addPoints } = useApp();
+  const { cases, updateCaseStatus, addPoints, rateCase } = useApp();
   const [showPin, setShowPin] = useState(false);
   const [showRating, setShowRating] = useState(false);
   const [rating, setRating] = useState(0);
@@ -67,7 +68,13 @@ export default function CaseStatus() {
           <span className="text-xs">Subir foto evidencia (opcional - demo)</span>
         </div>
 
-        <Button variant="primary" size="lg" onClick={() => navigate('/user/home')}>
+        <Button variant="primary" size="lg" onClick={async () => {
+          if (rating > 0) {
+            await rateCase(c.id, 'user', rating, issues);
+            toast.success('Calificación enviada');
+          }
+          navigate('/user/home');
+        }}>
           Volver al inicio
         </Button>
       </div>

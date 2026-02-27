@@ -10,8 +10,8 @@ export default function AutoAssign() {
   const { addCase } = useApp();
   const assigned = COLLECTORS[2]; // EcoCocha - most efficient
 
-  const handleConfirm = () => {
-    const newId = addCase({
+  const handleConfirm = async () => {
+    const newId = await addCase({
       status: 'Pendiente',
       items: [{ materialId: 'm1', materialName: 'PET', bucket: 'Reciclable', estimatedKg: 3, photos: 4 }],
       totalKg: 3,

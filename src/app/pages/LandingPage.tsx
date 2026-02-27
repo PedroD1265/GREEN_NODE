@@ -1,10 +1,24 @@
 import React from 'react';
 import { useNavigate } from 'react-router';
+import { useApp } from '../../context/AppContext';
 import { Button } from '../components/UI';
 import { Leaf, Truck } from 'lucide-react';
 
 export default function LandingPage() {
   const navigate = useNavigate();
+  const { loginAs, setMode } = useApp();
+
+  const handleUserLogin = async () => {
+    await loginAs('user');
+    setMode('user');
+    navigate('/user/home');
+  };
+
+  const handleCollectorLogin = async () => {
+    await loginAs('collector');
+    setMode('collector');
+    navigate('/collector/onboarding');
+  };
 
   return (
     <div className="h-full flex flex-col p-6 bg-gradient-to-b from-[#DFF3E7] to-white">
@@ -44,11 +58,11 @@ export default function LandingPage() {
 
       <div className="space-y-3 pb-8">
         <p className="text-center text-xs text-[#9CA3AF] mb-1">Selecciona un rol</p>
-        <Button variant="primary" size="lg" onClick={() => navigate('/user/home')}>
+        <Button variant="primary" size="lg" onClick={handleUserLogin}>
           <Leaf size={20} />
           Entrar como Usuario
         </Button>
-        <Button variant="secondary" size="lg" onClick={() => navigate('/collector/onboarding')}>
+        <Button variant="secondary" size="lg" onClick={handleCollectorLogin}>
           <Truck size={20} />
           Entrar como Recolector
         </Button>

@@ -185,7 +185,7 @@ export default function ManualCase() {
             Continuar
           </Button>
         ) : (
-          <Button variant="primary" size="lg" onClick={() => {
+          <Button variant="primary" size="lg" onClick={async () => {
             const totalKg = Object.values(quantities).reduce((a, b) => a + b, 0) || selectedMaterials.length;
             const items = selectedMaterials.map(name => {
               const mat = MATERIALS.find(m => m.name === name);
@@ -197,7 +197,7 @@ export default function ManualCase() {
                 photos: 4,
               };
             });
-            const newId = addCase({
+            const newId = await addCase({
               status: 'Pendiente',
               items,
               totalKg,

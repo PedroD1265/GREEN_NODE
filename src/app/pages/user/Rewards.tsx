@@ -3,9 +3,10 @@ import { useApp } from '../../../context/AppContext';
 import { Card, Badge, Button } from '../../components/UI';
 import { Zap } from 'lucide-react';
 import { REWARDS } from '../../../data/mockData';
+import { toast } from 'sonner';
 
 export default function Rewards() {
-  const { userPoints, userLevel } = useApp();
+  const { userPoints, userLevel, redeemReward } = useApp();
 
   // Progress to next level
   const nextLevel = userLevel === 'Bronce' ? 800 : userLevel === 'Plata' ? 2000 : 5000;
@@ -72,6 +73,15 @@ export default function Rewards() {
                 size="sm"
                 disabled={!canRedeem}
                 className="shrink-0"
+                onClick={async () => {
+                  if (!canRedeem) return;
+                  const result = await redeemReward(rw.id);
+                  if (result.success) {
+                    toast.success(`${rw.name} canjeado!`, { description: `Te quedan ${result.remainingPoints} pts` });
+                  } else {
+                    toast.error('Error al canjear', { description: result.error });
+                  }
+                }}
               >
                 {canRedeem ? 'Canjear' : 'Bloqueado'}
               </Button>

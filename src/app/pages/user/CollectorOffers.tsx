@@ -10,10 +10,10 @@ export default function CollectorOffers() {
   const { addCase } = useApp();
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     const col = COLLECTORS.find(c => c.id === selectedId);
     if (!col) return;
-    const newId = addCase({
+    const newId = await addCase({
       status: 'Pendiente',
       items: [{ materialId: 'm1', materialName: 'PET', bucket: 'Reciclable', estimatedKg: 3, photos: 4 }],
       totalKg: 3,

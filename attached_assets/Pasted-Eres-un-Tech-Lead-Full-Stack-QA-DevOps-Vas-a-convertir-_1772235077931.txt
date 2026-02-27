@@ -1,0 +1,168 @@
+Eres un Tech Lead Full-Stack + QA + DevOps. Vas a convertir este repo GREEN_NODE (React/Vite + React Router + Tailwind + shadcn/ui + AppContext + mockData) en una app funcional dentro de Replit, con dos modos:
+
+- MODO DEMO (default): todo funciona con datos seed + IA mock determinística + storage local.
+- MODO REAL (preparado): la app usa proveedores (StorageProvider / AIProvider / AuthProvider) listos para conectar a Microsoft (Azure Blob Storage + Azure OpenAI / Azure AI Foundry). En modo REAL debe existir el “cableado” (interfaces, adapters, env vars, endpoints) pero puede quedar con implementaciones stub si faltan credenciales. No inventes credenciales.
+
+PRINCIPIOS
+- NO reescribir UI existente. Mantener rutas y estilo.
+- Cambios incrementales, sin refactors masivos.
+- Todo debe correr en Replit (dev) con 1 comando.
+- Documentación impecable: README + /docs.
+- Evitar features frágiles del agente (OAuth real, deploy complejo). Mantenerlo robusto.
+
+ENTREGABLE FINAL (Definition of Done)
+A) Run & Build
+1) `npm install` y `npm run dev` funcionan en Replit.
+2) `npm run build` funciona sin errores.
+3) `npm run start` (modo prod preview) sirve build + API si es posible; si no, documenta alternativa.
+
+B) Arquitectura DEMO/REAL
+4) Implementar un switch de configuración:
+   - `APP_MODE=demo|real` (default demo)
+   - `STORAGE_PROVIDER=local|azure`
+   - `AI_PROVIDER=mock|azure`
+   - `AUTH_MODE=demo|real`
+   En demo: todo funciona sin claves.
+   En real: valida que falten variables y muestra mensajes “Missing config”.
+
+5) Backend API en el mismo proyecto (Express recomendado) con rutas `/api/*`:
+   - GET /api/health
+   - POST /api/auth/login (demo role login)
+   - GET /api/auth/me
+   - POST /api/cases
+   - GET /api/cases
+   - GET /api/cases/:id
+   - PATCH /api/cases/:id
+   - POST /api/cases/:id/evidence (upload)
+   - POST /api/cases/:id/rate
+   - GET /api/collectors
+   - PATCH /api/collectors/:id
+   - GET /api/rewards
+   - POST /api/rewards/redeem
+   - GET /api/centers
+   - POST /api/ai/classify (demo uses mock; real uses azure adapter stub)
+   - POST /api/ai/recommend-collectors (demo uses mock; real uses logic + optional azure)
+
+C) Persistencia real (MVP)
+6) DB: SQLite (archivo) dentro de Replit:
+   - initDb() crea tablas si no existen
+   - seedDb() carga datos iniciales coherentes con src/data/mockData.ts
+   - DB path: /data/green-node.sqlite
+   - Proveer un DBProvider interface para futuro Cosmos (solo interface + stub, no Cosmos real)
+
+Modelos mínimos:
+- users(id, role, name, trustLevel, points)
+- collectors(id, type, verified, rating, autoAccept, zone, tariffsJson, windowsJson)
+- cases(id, userId, collectorId, status, materialsJson, estKg, scheduleJson, addressJson, aiConfirmed, incentiveType, pin4, createdAt)
+- evidence(id, caseId, url, kind, createdAt)
+- ratings(id, caseId, fromRole, stars, issuesJson, createdAt)
+- rewards(id, title, pointsCost, type)
+- redemptions(id, userId, rewardId, createdAt)
+- centers(id, name, materialsJson, hours, address)
+
+D) Storage DEMO + REAL preparado
+7) DEMO: LocalStorageProvider
+- Subidas con multer a /uploads
+- Servir /uploads estático
+- Guardar URLs en evidence
+8) REAL: AzureBlobStorageProvider (adapter + stub)
+- Implementar StorageProvider interface:
+  - uploadEvidence(file, meta) -> { url, providerMeta }
+  - getSignedUploadUrl(meta) (opcional)
+- Azure provider puede quedar “TODO” si no hay credenciales, pero debe:
+  - leer env vars esperadas
+  - fallar con error claro “Missing Azure Storage config”
+  - y dejar la estructura lista
+
+Env vars esperadas (no inventar valores):
+- AZURE_STORAGE_ACCOUNT
+- AZURE_STORAGE_CONTAINER
+- AZURE_STORAGE_CONNECTION_STRING (opcional si usan MI después)
+- AZURE_STORAGE_SAS_TTL_MINUTES (optional)
+
+E) IA DEMO + REAL preparado
+9) DEMO: AIMockProvider determinístico
+- classifyWasteFromPhotos(photos) -> material, bucket, confidence, quality, tips
+- recommendCollectors(caseDraft, collectors) -> top3 + recommendedId + reasons
+10) REAL: AzureAIProvider (adapter + stub)
+- Implementar AIProvider interface:
+  - classifyWasteFromImages(imageUrls|buffers, context) -> result
+  - generateTips(material, bucket, quality) -> tips (optional)
+- Azure provider:
+  - lee env vars
+  - si faltan, devuelve error claro + UI friendly message
+- No llamar a Azure si no hay keys.
+Env vars esperadas:
+- AZURE_OPENAI_ENDPOINT
+- AZURE_OPENAI_API_KEY
+- AZURE_OPENAI_DEPLOYMENT (vision-capable)
+- AZURE_OPENAI_API_VERSION (optional)
+
+F) Auth DEMO + REAL preparado
+11) DEMO auth:
+- login por rol (user/collector/admin) desde LandingPage (sin rediseño grande)
+- token simple (JWT o cookie) solo demo
+12) REAL auth (preparado):
+- AuthProvider interface + stub para Microsoft Entra External ID / B2C
+- En modo REAL, si no hay config, mostrar “Auth real no configurada”
+Env vars esperadas:
+- AUTH_TENANT_ID
+- AUTH_CLIENT_ID
+- AUTH_ISSUER
+- AUTH_AUDIENCE
+
+G) Conectar Frontend a API sin romper
+13) Crear src/lib/api.ts (fetch wrapper con baseURL /api)
+14) Modificar AppContext:
+- En demo: puede seguir usando estado local, pero debe sincronizar con API/DB por defecto.
+- addCase debe usar POST /api/cases y retornar id.
+- CasesList, CaseStatus, CollectorRequests deben usar GET /api/cases.
+- Mantener fallback a mockData si API falla (solo demo).
+
+H) Flujos End-to-End reales
+15) Verificar / reparar:
+- ManualCase -> crea caso -> navega /user/case/:id
+- Offers -> crea caso -> navega /user/case/:id
+- AutoAssign -> crea caso -> navega /user/case/:id
+- Collector acepta/rechaza segun trust/autoAccept -> status changes persist
+- PIN 4 dígitos: usuario ve PIN, recolector lo ingresa, se cierra caso
+- Evidence upload: al menos en collector confirm y opcional en user rating
+- Rewards redeem: crea redemption, descuenta puntos si aplica (demo rule)
+
+I) Observabilidad + QA
+16) Logging en backend: request logs + error handler
+17) Frontend: error boundary + toasts consistentes
+18) Scripts:
+- lint, typecheck (si ya existe TS)
+- build
+19) “Smoke test” en README:
+- 10 pasos demo para usuario
+- 10 pasos demo para recolector
+
+J) Documentación y handoff a Microsoft
+20) /docs:
+- architecture.md (demo/real providers, diagram textual)
+- data-model.md (tablas + JSON fields)
+- microsoft-integration.md (pasos para Blob + Azure OpenAI + Entra)
+- api-reference.md (endpoints)
+
+RESTRICCIONES IMPORTANTES
+- No uses Prisma si complica Replit. Preferir SQLite simple (better-sqlite3) o sqlite3.
+- No agregar OAuth real en Replit.
+- No romper rutas existentes.
+- Si algo no se puede en Replit, dejarlo listo con stubs y documentar.
+
+EJECUCIÓN
+1) Arranca corriendo `npm install` y `npm run dev`. Corrige errores de runtime.
+2) Implementa backend Express + DB init/seed.
+3) Conecta frontend al backend (AppContext -> API).
+4) Implementa providers + switch demo/real.
+5) Implementa uploads local.
+6) Implementa AI mock + Azure stubs.
+7) Actualiza README y /docs.
+
+Al final entrega:
+- Lista de archivos nuevos/actualizados
+- Cómo cambiar a modo REAL
+- Known limitations
+- Confirmación de que flows funcionan
