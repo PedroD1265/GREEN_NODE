@@ -13,18 +13,35 @@ Abre el navegador en `http://localhost:5000`
 
 ## Modos de Operacion
 
+GREEN NODE soporta tres modos, seleccionables desde la Landing Page:
+
 ### Modo DEMO (default)
 Todo funciona sin credenciales externas. Datos seed, IA mock, auth por rol.
+Si el backend no esta disponible, usa datos mock como fallback.
+
+### Modo FULL REPLIT
+Backend completo con DB SQLite/PostgreSQL. Datos persistentes.
+Requiere que el servidor Express este corriendo. Sin fallback a mock.
+Ver `docs/replit-setup.md` para configuracion.
 
 ### Modo REAL
-Conecta a Microsoft Azure. Requiere variables de entorno:
+Proveedores externos (Supabase para DB/Auth/Storage, IA externa).
+Requiere variables de entorno configuradas:
 ```
 APP_MODE=real
-STORAGE_PROVIDER=azure
-AI_PROVIDER=azure
-AUTH_MODE=real
+SUPABASE_URL=https://xxx.supabase.co
+SUPABASE_ANON_KEY=...
+SUPABASE_SERVICE_ROLE_KEY=...
+SUPABASE_BUCKET=evidence
+EXTERNAL_AI_API_KEY=...
+EXTERNAL_AI_ENDPOINT=...
 ```
-Ver `docs/microsoft-integration.md` para configuracion completa.
+Ver `docs/real-launch-supabase.md` para la guia completa.
+
+### Cambiar de modo
+1. En la Landing Page, seleccionar uno de los tres botones de modo
+2. O configurar `APP_MODE=demo|replit|real` como variable de entorno
+3. Ver `docs/modes.md` para detalles de cada modo
 
 ## Scripts
 
@@ -34,6 +51,8 @@ Ver `docs/microsoft-integration.md` para configuracion completa.
 | `npm run build` | Build de produccion del frontend |
 | `npm run dev:frontend` | Solo frontend |
 | `npm run dev:backend` | Solo backend |
+| `npm run db:seed` | Seed de datos en la base de datos |
+| `npm run db:reset` | Reset de DB + re-seed |
 
 ## Arquitectura
 
@@ -105,7 +124,10 @@ docs/                   # Documentacion
 
 ## Documentacion
 
+- [Modos de Operacion](docs/modes.md)
 - [Arquitectura](docs/architecture.md)
 - [Modelo de Datos](docs/data-model.md)
 - [Referencia API](docs/api-reference.md)
+- [Setup en Replit](docs/replit-setup.md)
+- [Lanzamiento con Supabase](docs/real-launch-supabase.md)
 - [Integracion Microsoft](docs/microsoft-integration.md)

@@ -1,24 +1,48 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useApp } from '../../context/AppContext';
 import { Button } from '../components/UI';
-import { Leaf, Truck } from 'lucide-react';
+import { Leaf, Truck, Play, Server, Globe } from 'lucide-react';
+import { AppMode, getAppMode, setAppMode } from '../config/appMode';
+import { modeDescriptions } from '../config/modeDescriptions';
+
+const modeIcons: Record<AppMode, React.ReactNode> = {
+  demo: <Play size={22} />,
+  replit: <Server size={22} />,
+  real: <Globe size={22} />,
+};
 
 export default function LandingPage() {
   const navigate = useNavigate();
-  const { loginAs, setMode } = useApp();
+  const { loginAs, setMode, appMode: currentAppMode } = useApp();
+  const [selectedMode, setSelectedMode] = useState<AppMode>(getAppMode());
 
-  const handleUserLogin = async () => {
-    await loginAs('user');
-    setMode('user');
-    navigate('/user/home');
+  const handleModeSelect = (mode: AppMode) => {
+    setAppMode(mode);
+    setSelectedMode(mode);
   };
 
-  const handleCollectorLogin = async () => {
-    await loginAs('collector');
-    setMode('collector');
-    navigate('/collector/onboarding');
+  const enterApp = (targetPath: string, role: 'user' | 'collector') => {
+    if (selectedMode !== currentAppMode) {
+      setAppMode(selectedMode);
+      window.location.href = targetPath;
+      return;
+    }
+
+    if (selectedMode === 'real') {
+      navigate('/launch-checklist');
+      return;
+    }
+
+    return (async () => {
+      await loginAs(role);
+      setMode(role);
+      navigate(targetPath);
+    })();
   };
+
+  const handleUserLogin = () => enterApp('/user/home', 'user');
+  const handleCollectorLogin = () => enterApp('/collector/onboarding', 'collector');
 
   return (
     <div className="h-full flex flex-col p-6 bg-gradient-to-b from-[#DFF3E7] to-white">
@@ -30,29 +54,38 @@ export default function LandingPage() {
         <h1 className="text-3xl font-bold text-[#0B3D2E] mb-1 tracking-tight">GREEN NODE</h1>
         <p className="text-[#4B5563] text-sm max-w-[260px]">Conectamos generadores de residuos con recolectores verificados en Cochabamba.</p>
 
-        <div className="mt-6 px-4 py-1.5 bg-[#FFF2CC] text-[#C77D00] rounded-full text-xs font-semibold uppercase tracking-wider">
-          Modo Demo
-        </div>
-
-        {/* Demo How-To */}
-        <div className="mt-6 bg-white rounded-2xl p-4 shadow-sm border border-[#E5E7EB] text-left w-full max-w-[320px]">
-          <p className="text-xs font-semibold text-[#0B3D2E] mb-2">Demo usuario:</p>
-          <ol className="text-[11px] text-[#4B5563] space-y-1 list-decimal list-inside">
-            <li>Entra como Usuario y habla con GREEN (IA)</li>
-            <li>Escanea un residuo o crea un pedido</li>
-            <li>Elige incentivo y recolector</li>
-            <li>Sigue el caso hasta completar con PIN</li>
-            <li>Canjea recompensas con tus puntos</li>
-          </ol>
-          <p className="text-xs font-semibold text-[#0B5D6B] mb-2 mt-4">Demo recolector:</p>
-          <ol className="text-[11px] text-[#4B5563] space-y-1 list-decimal list-inside">
-            <li>Entrar como Recolector</li>
-            <li>Registrar perfil y tarifas</li>
-            <li>Ver solicitudes cercanas</li>
-            <li>Aceptar y seguir ruta</li>
-            <li>Confirmar PIN y calificar</li>
-          </ol>
-          <p className="text-[10px] text-[#9CA3AF] mt-2 italic">Todo es DEMO - datos ficticios</p>
+        <div className="mt-5 w-full max-w-[340px] space-y-2">
+          <p className="text-[10px] uppercase tracking-wider text-[#9CA3AF] font-semibold mb-1">Selecciona modo de operacion</p>
+          {(['demo', 'replit', 'real'] as AppMode[]).map((mode) => {
+            const desc = modeDescriptions[mode];
+            const isSelected = selectedMode === mode;
+            return (
+              <button
+                key={mode}
+                onClick={() => handleModeSelect(mode)}
+                className="w-full text-left rounded-xl p-3 border-2 transition-all flex items-start gap-3"
+                style={{
+                  borderColor: isSelected ? desc.color : '#E5E7EB',
+                  backgroundColor: isSelected ? desc.bgColor : 'white',
+                }}
+              >
+                <div
+                  className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 mt-0.5"
+                  style={{ backgroundColor: isSelected ? desc.color : '#F3F4F6', color: isSelected ? 'white' : '#9CA3AF' }}
+                >
+                  {modeIcons[mode]}
+                </div>
+                <div className="min-w-0">
+                  <div className="text-xs font-bold" style={{ color: isSelected ? desc.color : '#374151' }}>
+                    {desc.title}
+                  </div>
+                  <div className="text-[10px] leading-tight mt-0.5" style={{ color: isSelected ? desc.color : '#6B7280' }}>
+                    {desc.description}
+                  </div>
+                </div>
+              </button>
+            );
+          })}
         </div>
       </div>
 

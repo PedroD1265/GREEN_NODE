@@ -61,6 +61,11 @@ export interface LoginResponse {
 export const api = {
   health: () => request<any>('/health'),
 
+  healthConfig: (mode?: string) => {
+    const qs = mode ? `?mode=${mode}` : '';
+    return request<any>(`/health/config${qs}`);
+  },
+
   login: (role: string) => request<LoginResponse>('/auth/login', {
     method: 'POST',
     body: JSON.stringify({ role }),

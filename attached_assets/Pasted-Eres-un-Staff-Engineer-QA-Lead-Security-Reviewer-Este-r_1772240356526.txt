@@ -1,0 +1,135 @@
+Eres un Staff Engineer + QA Lead + Security Reviewer. Este repo GREEN_NODE ya fue convertido a full-stack en Replit (React/Vite frontend + Express API + SQLite + auth middleware + docs). Tu tarea ahora NO es “crear features nuevas”, sino:
+
+1) auditar el estado real,
+2) corregir bugs y riesgos,
+3) eliminar fricción del arranque,
+4) dejar DEMO/REAL totalmente switchable,
+5) agregar pruebas y una verificación final.
+
+OBJETIVO PRINCIPAL (NO NEGOCIABLE)
+La app debe funcionar perfectamente en:
+- MODO DEMO (sin credenciales): todo ok, sin errores/500 visibles, sin depender de timing.
+- MODO REAL (con credenciales): debe estar TODO el cableado listo para que al activar el modo y setear env vars, funcione real (storage + AI + auth real). Si faltan credenciales, debe fallar con mensajes claros y UI-friendly, sin romper el resto.
+
+ESTILO DE TRABAJO
+- Cambios incrementales, mínimos.
+- No romper UI existente ni rutas.
+- Si algo ya existe, mejóralo; no lo rehagas.
+- Prioriza confiabilidad, testabilidad y “apretar un botón”.
+
+A. AUDITORÍA Y PLAN (output obligatorio)
+1) Lee:
+- package.json scripts
+- vite.config
+- server entrypoint + middleware
+- AppContext init flow (login/health check)
+- providers (AI/Storage/Auth)
+- docs actuales (architecture, microsoft-integration)
+2) Produce un “Status Report” corto:
+- Qué está 100% OK
+- Qué está frágil
+- Qué bugs/riesgos hay
+- Qué falta para DEMO/REAL realmente switchable
+
+B. FIXES OBLIGATORIOS (P0)
+B1) Eliminar el “race condition” del arranque (sin excusas)
+Ahora mismo: Vite inicia antes que Express y el health check falla -> AppContext cae a mock data.
+Esto NO debe pasar o al menos NO debe generar 500/errores visibles ni dejar el estado pegado en mock.
+Soluciones aceptables (elige una o combina):
+- Iniciar backend antes del frontend (con un script “dev” orquestado)
+- Espera/retry con backoff en el health check y NO caer a mock hasta agotar intentos
+- Separar dev servers con un “wait-on” a /api/health antes de arrancar Vite
+Resultado esperado: al abrir la app por primera vez, carga desde API sin refrescar.
+
+B2) Switch DEMO/REAL con un botón real en UI (además de env vars)
+- Agrega un control solo visible en DEMO / admin:
+  - “Modo: DEMO / REAL”
+  - Guardado en localStorage (ej: app_mode_override)
+  - Si override existe, manda. Si no, usar APP_MODE env.
+- Al cambiar modo:
+  - recarga configuración (providers)
+  - muestra banner claro “DEMO” o “REAL”
+  - en REAL, si faltan env vars, mostrar checklist “faltan variables” y NO romper app.
+
+B3) Config validation centralizada
+Implementa getConfig() único (frontend + backend si aplica):
+- valida APP_MODE, STORAGE_PROVIDER, AI_PROVIDER, AUTH_MODE
+- en REAL: valida AZURE_* vars (storage/ai/auth)
+- Errores: tipos + mensajes humanos (para UI)
+- NO hardcodees secretos.
+
+B4) Seguridad: asegurar que no hay endpoints mutables sin auth
+- Recorre /api routes: todos los POST/PATCH mutables deben requerir token.
+- Validar roles donde aplique (collector/admin).
+- Asegura que GET sensibles respeten userId/role (al menos para demo):
+  - /api/cases debe devolver:
+    - user: solo sus casos
+    - collector: casos asignados o disponibles según lógica
+    - admin: todo
+(esto es importante incluso en demo para coherencia y evitar “filtración”)
+
+B5) Robustez de DB seed / migrations
+- DB init debe ser idempotente.
+- Seed debe correr una sola vez o ser seguro (no duplicar).
+- Agrega comando:
+  - `npm run db:reset` (borra sqlite + recrea + seed)
+  - `npm run db:seed` (seed seguro)
+
+C. FIXES IMPORTANTES (P1)
+C1) Evidence upload: verificar E2E
+- Asegura que el flujo de subida realmente guarda evidence en DB y se ve reflejado al consultar el caso.
+- Si UI no lo muestra, agrega una sección mínima en CaseStatus para listar evidencias (sin rediseño).
+
+C2) Persistencia de puntos: consistencia
+- Verifica que:
+  - redeem reward descuenta puntos en DB y en UI
+  - puntos se mantienen tras refresh
+- Agrega test de API para esto.
+
+C3) “Modo REAL” listo (sin implementar Azure real si no hay credenciales)
+- Asegura que existen:
+  - AzureBlobStorageProvider (stub bien hecho)
+  - AzureAIProvider (stub bien hecho)
+  - Auth real provider stub (Entra)
+- En REAL:
+  - si falta config: la UI lo muestra
+  - endpoints /api/ai/* devuelven error claro: “Real AI not configured”
+  - la app no se cae.
+
+D. PRUEBAS (modo test)
+D1) Agrega pruebas mínimas de backend (Vitest o Jest, elige simple):
+- /api/health OK
+- login -> token
+- crear case (auth) -> devuelve id
+- listar cases (filtrado por rol) -> correcto
+- update points -> persiste
+- redeem reward -> persiste
+D2) Agrega “smoke test script”:
+- `npm run test:smoke` que hace 5-7 requests con fetch y verifica status.
+
+E. DOCUMENTACIÓN (actualizar, no rehacer)
+E1) README:
+- Cómo correr dev SIN race condition
+- Cómo reset DB
+- Cómo cambiar DEMO/REAL desde UI + env vars
+- Troubleshooting
+E2) docs/microsoft-integration.md:
+- asegúrate de reflejar exactamente las env vars y el flujo recomendado
+- incluye tabla “REAL readiness checklist”.
+
+F. ENTREGA FINAL
+Al finalizar, entrega:
+1) Lista de archivos tocados (paths)
+2) Checklist con ✅/⚠️ para:
+- DEMO E2E
+- REAL (sin credenciales) UX-friendly
+- REAL (con credenciales) “ready”
+3) Instrucciones exactas para activar REAL “con un botón”
+4) Known limitations reales (sin humo)
+
+IMPORTANTE
+- No dejes el sistema en mock data por default después de que el backend ya está listo.
+- Si no puedes garantizar orden de arranque en Replit, implementa retry/backoff + deferred init para que el usuario no vea fallos.
+- No cambies estructura general de rutas ni UI base.
+
+Comienza ya con la auditoría, luego implementa P0, luego P1, luego tests, luego docs. 

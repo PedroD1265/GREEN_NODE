@@ -73,8 +73,29 @@ docs/                       # Documentation
 - Database: ./data/green-node.sqlite (auto-created + seeded)
 - Uploads: ./uploads/ (auto-created)
 
-## Demo/Real Mode
+## App Modes (DEMO / FULL REPLIT / REAL)
 
-Default is DEMO mode. Set APP_MODE=real for Azure integration.
-Individual providers: STORAGE_PROVIDER, AI_PROVIDER, AUTH_MODE.
-See docs/microsoft-integration.md for Azure setup.
+Three runtime modes selectable from the Landing Page or via `APP_MODE` env var:
+
+- **DEMO** (default): No credentials needed. Mock data, mock AI, simple JWT auth. Frontend falls back to mock data if backend unavailable.
+- **FULL REPLIT**: Requires backend running. SQLite/PostgreSQL DB, persistent data, retry with backoff on startup. No mock fallback.
+- **REAL**: External providers (Supabase for DB/Auth/Storage, external AI). Redirects to Launch Checklist (`/launch-checklist`) if env vars are missing.
+
+Mode selection priority: localStorage > VITE_APP_MODE env var > default (demo).
+When switching modes on the Landing Page, selecting a different mode + clicking a role button triggers a full page reload to re-initialize AppContext with the new mode.
+
+Individual provider overrides: STORAGE_PROVIDER, AI_PROVIDER, AUTH_MODE, DB_TYPE.
+See docs/modes.md for full details, docs/replit-setup.md for Replit config, docs/real-launch-supabase.md for Supabase setup.
+
+## DB Scripts
+
+- `npm run db:seed` — Seeds the SQLite database with demo data (idempotent)
+- `npm run db:reset` — Deletes DB file and re-seeds from scratch
+
+## Provider Architecture
+
+Provider factory (`server/providers/index.ts`) selects providers based on mode:
+- **Storage**: local (DEMO/REPLIT), replit (stub), supabase (stub)
+- **AI**: mock (DEMO/REPLIT), external (stub for REAL)
+- **Auth**: demo JWT (DEMO), replit (stub), supabase (stub)
+- **DB**: SQLite (DEMO/REPLIT default), postgres (stub), supabase (stub)

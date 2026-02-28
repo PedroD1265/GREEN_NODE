@@ -8,7 +8,9 @@
     "dev": "concurrently \"vite\" \"tsx server/index.ts\"",
     "dev:frontend": "vite",
     "dev:backend": "tsx server/index.ts",
-    "start": "node --import tsx server/index.ts"
+    "start": "node --import tsx server/index.ts",
+    "db:seed": "tsx server/db/scripts/seed.ts",
+    "db:reset": "tsx server/db/scripts/reset.ts"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",

@@ -2,6 +2,8 @@ import React from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router';
 import { clsx } from 'clsx';
 import { Home, Bot, ClipboardList, Gift, Truck, List, User, MapPin } from 'lucide-react';
+import { getAppMode } from '../config/appMode';
+import { modeDescriptions } from '../config/modeDescriptions';
 
 export function MobileLayout() {
   const location = useLocation();
@@ -9,30 +11,42 @@ export function MobileLayout() {
   const isUser = location.pathname.startsWith('/user');
   const isCollector = location.pathname.startsWith('/collector');
   const showNav = location.pathname !== '/' && (isUser || isCollector);
+  const isLanding = location.pathname === '/';
 
-  // Hide nav on certain full-screen pages
   const hideNavPaths = ['/user/photos', '/user/create-case', '/collector/onboarding'];
   const shouldHideNav = hideNavPaths.some(p => location.pathname.startsWith(p));
 
+  const appMode = getAppMode();
+  const modeInfo = modeDescriptions[appMode];
+
   return (
     <div className="min-h-screen flex flex-col font-sans text-[#111827] bg-[#F7F8FA]">
-      {/* Status Bar */}
       <div className={clsx(
         "h-11 w-full flex items-center justify-between px-6 shrink-0",
         isUser ? "bg-[#0B3D2E] text-white" : isCollector ? "bg-[#0B5D6B] text-white" : "bg-white text-[#111827]"
       )}>
         <span className="text-xs font-medium">9:41</span>
+        {!isLanding && (
+          <span
+            className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
+            style={{
+              backgroundColor: modeInfo.bgColor,
+              color: modeInfo.color,
+              border: `1px solid ${modeInfo.borderColor}`,
+            }}
+          >
+            {modeInfo.title}
+          </span>
+        )}
         <div className="flex gap-1 items-center">
           <div className="w-4 h-2 border border-current rounded-sm opacity-60"><div className="w-2.5 h-1 bg-current rounded-sm m-px" /></div>
         </div>
       </div>
 
-      {/* Content */}
       <div className="flex-1 overflow-y-auto relative scrollbar-hide">
         <Outlet />
       </div>
 
-      {/* Bottom Nav */}
       {showNav && !shouldHideNav && (
         <div className="h-[72px] bg-white border-t border-[#E5E7EB] flex items-start justify-around pt-2 shrink-0 pb-5">
           {isUser ? (

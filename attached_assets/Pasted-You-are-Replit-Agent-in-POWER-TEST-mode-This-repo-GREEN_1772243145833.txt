@@ -1,0 +1,133 @@
+You are Replit Agent in POWER + TEST mode. This repo GREEN_NODE already runs with a full-stack setup (Vite frontend + Express API + DB + auth middleware + docs). Your task is to implement THREE runtime modes selectable from the MAIN (Landing) screen via THREE buttons, and ensure each mode works end-to-end with minimal friction. Do not redesign the app; only add the mode selector UI and necessary wiring.
+
+THE THREE MODES (must be explicit)
+1) DEMO
+- Fully offline-friendly and no external dependencies.
+- Uses seeded/mock data and mock AI.
+- Backend/API may exist but is optional; DEMO must still function if API is down.
+- This is “always works” mode.
+
+2) FULL REPLIT
+- Uses Replit-native stack as much as possible:
+  - Replit Database (Postgres) OR the current DB if already Replit DB-backed (confirm)
+  - Replit App Storage for uploads (images/evidence)
+  - Replit Auth (if available) OR keep existing JWT demo auth but expose a clear path to turn on Replit Auth.
+- Must run “real” inside Replit: no mock fallbacks unless explicitly selected.
+- Goal: “production-ish” inside Replit.
+
+3) REAL (Easy Launch Path)
+- This is a “real-world ready” mode using the easiest non-Microsoft path (NOT Azure).
+- Choose the simplest external all-in-one provider path and prepare the code for it:
+  - Preferred: Supabase (Auth + Postgres + Storage)
+  - If Supabase is not feasible, fallback: Firebase (Auth + Storage + Firestore) but prefer Supabase.
+- REAL mode must:
+  - Use Provider interfaces (DBProvider, StorageProvider, AuthProvider, AIProvider)
+  - Fail gracefully with clear UI errors if required REAL env vars are missing
+  - Have a simple “launch checklist” documented in code comments / docs stub
+- IMPORTANT: Do NOT implement full Supabase/Firebase integration without env vars; instead:
+  - create adapters with correct method signatures
+  - implement config validation
+  - implement “dry-run” (shows missing vars) + test harness
+  - keep DEMO and FULL REPLIT working.
+
+MAIN UI REQUIREMENT (LandingPage)
+- Replace the single “MODO DEMO” indicator with three large mode buttons:
+  - “MODO DEMO”
+  - “MODO FULL REPLIT”
+  - “MODO REAL”
+- Selecting a mode should:
+  - persist to localStorage (e.g. app_mode=demo|replit|real)
+  - update a visible badge in the app header across screens (DEMO / FULL REPLIT / REAL)
+  - trigger a soft reload of context (re-init AppContext)
+- Under the buttons, show a brief 2–3 line description of each mode.
+
+MODE BEHAVIOR RULES
+A) Single Source of Truth
+- Implement a config module:
+  - src/app/config/appMode.ts (or similar)
+  - getAppMode(): reads localStorage first, then env fallback.
+  - Env fallback variable: VITE_APP_MODE = demo|replit|real (default demo)
+
+B) AppContext must follow the mode:
+- DEMO: use mockData immediately, optionally attempt API if available (no scary errors)
+- FULL REPLIT: require API + DB, no mock fallback unless user explicitly switches back to DEMO
+- REAL: require external provider config; if missing, show an “Implementation needed” screen and keep UI navigable (read-only) with clear messaging.
+
+C) Eliminate startup race condition
+- Ensure FULL REPLIT and REAL do not silently fall back to mock due to timing.
+- Fix by either:
+  - starting backend before frontend, OR
+  - implementing retry/backoff and “Backend starting…” state
+- DEMO can ignore backend.
+
+FULL REPLIT IMPLEMENTATION REQUIREMENTS
+1) Database
+- If current implementation uses SQLite file, migrate to Replit Database (Postgres) if available:
+  - Detect Replit DB connection string in env (e.g. DATABASE_URL)
+  - Implement a DBProvider that can use Postgres if DATABASE_URL exists, else fallback to SQLite
+- Seed must be idempotent.
+- Add scripts:
+  - npm run db:seed
+  - npm run db:reset (safe)
+
+2) Uploads
+- Implement StorageProvider:
+  - LocalStorageProvider (DEMO)
+  - ReplitStorageProvider (FULL REPLIT) using Replit App Storage if available; otherwise keep /uploads but document
+- Evidence upload must work end-to-end in FULL REPLIT.
+
+3) Auth
+- If Replit Auth is available, add an AuthProvider stub + wiring:
+  - ReplitAuthProvider (FULL REPLIT)
+  - DemoJWTAuthProvider (DEMO)
+- Keep current demo login working.
+- Ensure all mutating endpoints remain protected.
+
+REAL MODE (Easy Launch Path) REQUIREMENTS
+- Implement provider stubs for Supabase (preferred):
+  - SupabaseAuthProvider
+  - SupabaseDBProvider
+  - SupabaseStorageProvider
+- Add config validation for REAL:
+  - SUPABASE_URL
+  - SUPABASE_ANON_KEY
+  - SUPABASE_SERVICE_ROLE_KEY (server-only)
+  - SUPABASE_BUCKET
+- Do NOT store secrets in code.
+- In REAL mode with missing vars:
+  - show a Launch Checklist page (read-only)
+  - show missing env vars list
+  - show “How to launch” steps (brief)
+- Also implement AIProvider stubs:
+  - MockAIProvider (DEMO/REPLIT)
+  - ExternalAIProvider stub (REAL) with placeholders for any LLM API (no keys)
+
+TESTING REQUIREMENTS (Power + Test)
+- Add a smoke test script:
+  - verifies DEMO mode loads
+  - verifies FULL REPLIT mode can login, list cases, create case, update points, redeem reward
+  - verifies REAL mode shows missing config screen (when env vars absent)
+- Add minimal backend tests for auth middleware and one POST route.
+- Update README with:
+  - how to switch modes
+  - what each mode does
+  - how to configure FULL REPLIT (DB, Storage, Auth)
+  - REAL quick-launch checklist (Supabase)
+
+DOCUMENTATION OUTPUT (code-side only)
+- Replit should update README + create docs stubs (Antigravity will later enrich):
+  - docs/modes.md (DEMO vs FULL REPLIT vs REAL)
+  - docs/real-launch-supabase.md (step checklist, env vars)
+  - docs/replit-setup.md (DB, storage, auth toggles)
+
+DELIVERABLES
+- LandingPage shows 3 mode buttons and persists selection.
+- App header shows current mode badge.
+- AppContext respects mode rules (no accidental fallback in FULL REPLIT/REAL).
+- Startup race condition fixed or fully masked with retry/backoff + “starting…” UI.
+- FULL REPLIT uses Replit-native services as much as possible (DB + storage + auth wiring).
+- REAL mode provides easy launch path stubs + validation + clear UI checklist.
+- Smoke tests + README updates.
+- Confirm build passes: npm run build.
+
+Start by implementing the mode selector on LandingPage + config module, then wire AppContext, then address startup race, then providers, then tests and docs.

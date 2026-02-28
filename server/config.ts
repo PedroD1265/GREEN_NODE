@@ -1,8 +1,16 @@
+export type AppMode = 'demo' | 'replit' | 'real';
+
+export type StorageType = 'local' | 'replit' | 'supabase' | 'azure';
+export type AIType = 'mock' | 'external' | 'azure';
+export type AuthType = 'demo' | 'replit' | 'supabase' | 'azure';
+export type DBType = 'sqlite' | 'postgres' | 'supabase';
+
 export interface AppConfig {
-  appMode: 'demo' | 'real';
-  storageProvider: 'local' | 'azure';
-  aiProvider: 'mock' | 'azure';
-  authMode: 'demo' | 'real';
+  appMode: AppMode;
+  storageProvider: StorageType;
+  aiProvider: AIType;
+  authMode: AuthType;
+  dbType: DBType;
   port: number;
   dbPath: string;
   uploadsDir: string;
@@ -10,12 +18,27 @@ export interface AppConfig {
 }
 
 export function getConfig(): AppConfig {
-  const appMode = (process.env.APP_MODE || 'demo') as 'demo' | 'real';
+  const appMode = (process.env.APP_MODE || 'demo') as AppMode;
+
+  const defaults: Record<AppMode, { storage: StorageType; ai: AIType; auth: AuthType; db: DBType }> = {
+    demo: { storage: 'local', ai: 'mock', auth: 'demo', db: 'sqlite' },
+    replit: {
+      storage: 'replit',
+      ai: 'mock',
+      auth: 'replit',
+      db: process.env.DATABASE_URL ? 'postgres' : 'sqlite',
+    },
+    real: { storage: 'supabase', ai: 'external', auth: 'supabase', db: 'supabase' },
+  };
+
+  const d = defaults[appMode];
+
   return {
     appMode,
-    storageProvider: (process.env.STORAGE_PROVIDER || (appMode === 'demo' ? 'local' : 'azure')) as 'local' | 'azure',
-    aiProvider: (process.env.AI_PROVIDER || (appMode === 'demo' ? 'mock' : 'azure')) as 'mock' | 'azure',
-    authMode: (process.env.AUTH_MODE || appMode) as 'demo' | 'real',
+    storageProvider: (process.env.STORAGE_PROVIDER || d.storage) as StorageType,
+    aiProvider: (process.env.AI_PROVIDER || d.ai) as AIType,
+    authMode: (process.env.AUTH_MODE || d.auth) as AuthType,
+    dbType: (process.env.DB_TYPE || d.db) as DBType,
     port: parseInt(process.env.API_PORT || '3001', 10),
     dbPath: process.env.DB_PATH || './data/green-node.sqlite',
     uploadsDir: process.env.UPLOADS_DIR || './uploads',
@@ -25,27 +48,68 @@ export function getConfig(): AppConfig {
 
 export function validateRealModeConfig(): string[] {
   const missing: string[] = [];
-
-  if (process.env.APP_MODE === 'real' || process.env.STORAGE_PROVIDER === 'azure') {
-    const azureStorageVars = ['AZURE_STORAGE_ACCOUNT', 'AZURE_STORAGE_CONTAINER'];
-    for (const v of azureStorageVars) {
-      if (!process.env[v]) missing.push(v);
-    }
+  const supabaseVars = ['SUPABASE_URL', 'SUPABASE_ANON_KEY', 'SUPABASE_SERVICE_ROLE_KEY'];
+  for (const v of supabaseVars) {
+    if (!process.env[v]) missing.push(v);
   }
-
-  if (process.env.APP_MODE === 'real' || process.env.AI_PROVIDER === 'azure') {
-    const azureAiVars = ['AZURE_OPENAI_ENDPOINT', 'AZURE_OPENAI_API_KEY', 'AZURE_OPENAI_DEPLOYMENT'];
-    for (const v of azureAiVars) {
-      if (!process.env[v]) missing.push(v);
-    }
-  }
-
-  if (process.env.APP_MODE === 'real' || process.env.AUTH_MODE === 'real') {
-    const authVars = ['AUTH_TENANT_ID', 'AUTH_CLIENT_ID', 'AUTH_ISSUER', 'AUTH_AUDIENCE'];
-    for (const v of authVars) {
-      if (!process.env[v]) missing.push(v);
-    }
-  }
-
+  if (!process.env.SUPABASE_BUCKET) missing.push('SUPABASE_BUCKET');
+  if (!process.env.EXTERNAL_AI_API_KEY) missing.push('EXTERNAL_AI_API_KEY');
+  if (!process.env.EXTERNAL_AI_ENDPOINT) missing.push('EXTERNAL_AI_ENDPOINT');
   return missing;
+}
+
+export function validateReplitModeConfig(): string[] {
+  const missing: string[] = [];
+  if (!process.env.DATABASE_URL && !process.env.DB_PATH) {
+    missing.push('DATABASE_URL (or DB_PATH for SQLite fallback)');
+  }
+  return missing;
+}
+
+export interface ModeCapabilities {
+  mode: AppMode;
+  database: { type: string; status: string };
+  storage: { type: string; status: string };
+  auth: { type: string; status: string };
+  ai: { type: string; status: string };
+  missingEnvVars: string[];
+}
+
+export function getModeCapabilities(mode?: AppMode): ModeCapabilities {
+  const effectiveMode = mode || getConfig().appMode;
+
+  const missingEnvVars = effectiveMode === 'real'
+    ? validateRealModeConfig()
+    : effectiveMode === 'replit'
+      ? validateReplitModeConfig()
+      : [];
+
+  const capabilities: Record<AppMode, Omit<ModeCapabilities, 'missingEnvVars'>> = {
+    demo: {
+      mode: 'demo',
+      database: { type: 'sqlite', status: 'ready' },
+      storage: { type: 'local', status: 'ready' },
+      auth: { type: 'demo-jwt', status: 'ready' },
+      ai: { type: 'mock', status: 'ready' },
+    },
+    replit: {
+      mode: 'replit',
+      database: { type: process.env.DATABASE_URL ? 'postgres' : 'sqlite', status: 'ready' },
+      storage: { type: 'replit-local', status: 'ready' },
+      auth: { type: 'replit-jwt', status: 'ready' },
+      ai: { type: 'mock', status: 'ready' },
+    },
+    real: {
+      mode: 'real',
+      database: { type: 'supabase', status: missingEnvVars.some(v => v.startsWith('SUPABASE_')) ? 'not_configured' : 'ready' },
+      storage: { type: 'supabase', status: missingEnvVars.includes('SUPABASE_BUCKET') ? 'not_configured' : 'ready' },
+      auth: { type: 'supabase', status: missingEnvVars.some(v => v.startsWith('SUPABASE_')) ? 'not_configured' : 'ready' },
+      ai: { type: 'external', status: missingEnvVars.some(v => v.startsWith('EXTERNAL_AI_')) ? 'not_configured' : 'ready' },
+    },
+  };
+
+  return {
+    ...capabilities[effectiveMode],
+    missingEnvVars,
+  };
 }

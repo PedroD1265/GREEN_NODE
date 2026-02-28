@@ -4,10 +4,17 @@ import {
   DEMO_CASES, COLLECTORS, Collector
 } from '../data/mockData';
 import { api, setAuthToken, getAuthToken } from '../lib/api';
+import { AppMode, getAppMode } from '../app/config/appMode';
+
+type BackendStatus = 'connecting' | 'connected' | 'unavailable';
 
 interface AppContextType {
   mode: 'user' | 'collector';
   setMode: (m: 'user' | 'collector') => void;
+
+  appMode: AppMode;
+  backendStatus: BackendStatus;
+  retryCount: number;
 
   userPoints: number;
   userLevel: UserLevel;
@@ -42,8 +49,30 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
+const MAX_RETRIES = 5;
+const RETRY_BASE_MS = 1000;
+
+async function waitForBackend(maxRetries: number, onRetry: (n: number) => void, appMode?: string): Promise<boolean> {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      const result = await api.health();
+      if (appMode === 'real' && result.status === 'degraded') {
+        return true;
+      }
+      return true;
+    } catch {
+      onRetry(i + 1);
+      await new Promise(r => setTimeout(r, RETRY_BASE_MS * Math.pow(1.5, i)));
+    }
+  }
+  return false;
+}
+
 export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [mode, setMode] = useState<'user' | 'collector'>('user');
+  const [appMode] = useState<AppMode>(getAppMode());
+  const [backendStatus, setBackendStatus] = useState<BackendStatus>(appMode === 'demo' ? 'connected' : 'connecting');
+  const [retryCount, setRetryCount] = useState(0);
   const [userPoints, setUserPoints] = useState(1250);
   const [userName, setUserName] = useState('Ana');
   const [userId, setUserId] = useState('user-me');
@@ -59,9 +88,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       const data = await api.getCases();
       setCases(data);
     } catch {
-      console.warn('[AppContext] Failed to fetch cases from API, using local state');
+      if (appMode !== 'demo') {
+        console.warn('[AppContext] Failed to fetch cases from API');
+      }
     }
-  }, []);
+  }, [appMode]);
 
   const loginAs = useCallback(async (role: 'user' | 'collector' | 'admin') => {
     try {
@@ -75,9 +106,13 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       }
       await refreshCases();
     } catch (err) {
-      console.warn('[AppContext] Login failed, continuing in local demo mode', err);
+      if (appMode === 'demo') {
+        console.warn('[AppContext] Login failed, continuing in local demo mode');
+      } else {
+        console.error('[AppContext] Login failed in', appMode, 'mode:', err);
+      }
     }
-  }, [refreshCases]);
+  }, [refreshCases, appMode]);
 
   const logout = useCallback(() => {
     setAuthToken(null);
@@ -85,24 +120,66 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   useEffect(() => {
-    const token = getAuthToken();
-    if (token) {
-      api.getMe().then(user => {
-        setIsLoggedIn(true);
-        setUserName(user.name);
-        setUserId(user.id);
-        setUserPoints(user.points);
-        refreshCases();
-      }).catch(() => {
-        setAuthToken(null);
-      });
-    } else {
-      api.health().then(() => {
-        loginAs('user');
-      }).catch(() => {
-        console.warn('[AppContext] API not available, using mock data');
-      });
-    }
+    const init = async () => {
+      if (appMode === 'demo') {
+        const token = getAuthToken();
+        if (token) {
+          try {
+            const user = await api.getMe();
+            setIsLoggedIn(true);
+            setUserName(user.name);
+            setUserId(user.id);
+            setUserPoints(user.points);
+            await refreshCases();
+            setBackendStatus('connected');
+          } catch {
+            setAuthToken(null);
+            setBackendStatus('connected');
+          }
+        } else {
+          try {
+            await api.health();
+            await loginAs('user');
+            setBackendStatus('connected');
+          } catch {
+            console.warn('[AppContext] API not available, using mock data');
+            setBackendStatus('connected');
+          }
+        }
+        return;
+      }
+
+      const connected = await waitForBackend(MAX_RETRIES, (n) => setRetryCount(n), appMode);
+      if (!connected) {
+        setBackendStatus('unavailable');
+        if (appMode === 'replit') {
+          console.error('[AppContext] Backend unavailable in FULL REPLIT mode');
+        }
+        return;
+      }
+
+      setBackendStatus('connected');
+      setRetryCount(0);
+
+      const token = getAuthToken();
+      if (token) {
+        try {
+          const user = await api.getMe();
+          setIsLoggedIn(true);
+          setUserName(user.name);
+          setUserId(user.id);
+          setUserPoints(user.points);
+          await refreshCases();
+        } catch {
+          setAuthToken(null);
+          await loginAs('user');
+        }
+      } else {
+        await loginAs('user');
+      }
+    };
+
+    init();
   }, []);
 
   const addCase = async (c: Omit<PickupCase, 'id' | 'createdAt'>): Promise<string> => {
@@ -122,10 +199,13 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       await refreshCases();
       return result.id;
     } catch {
-      const id = `CASE-${Date.now()}`;
-      const newCase: PickupCase = { ...c, id, createdAt: Date.now() };
-      setCases(prev => [newCase, ...prev]);
-      return id;
+      if (appMode === 'demo') {
+        const id = `CASE-${Date.now()}`;
+        const newCase: PickupCase = { ...c, id, createdAt: Date.now() };
+        setCases(prev => [newCase, ...prev]);
+        return id;
+      }
+      throw new Error('No se pudo crear el caso');
     }
   };
 
@@ -142,14 +222,14 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const acceptCase = (id: string) => {
     setCases(prev => prev.map(c => c.id === id ? {
       ...c, status: 'Aceptado' as CaseStatus, collectorId: 'col-3', collectorName: 'EcoCocha',
-      addressVisible: true, address: 'Av. Heroínas #890, Centro'
+      addressVisible: true, address: 'Av. Heroinas #890, Centro'
     } : c));
     api.updateCase(id, {
       status: 'Aceptado',
       collectorId: 'col-3',
       collectorName: 'EcoCocha',
       addressVisible: true,
-      address: 'Av. Heroínas #890, Centro',
+      address: 'Av. Heroinas #890, Centro',
     }).then(() => refreshCases()).catch(() => {});
   };
 
@@ -190,6 +270,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   return (
     <AppContext.Provider value={{
       mode, setMode,
+      appMode, backendStatus, retryCount,
       userPoints, userLevel, userName, userId,
       cases,
       addCase, updateCaseStatus, addPoints,

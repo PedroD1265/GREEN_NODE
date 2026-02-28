@@ -1,6 +1,7 @@
 import { createBrowserRouter } from 'react-router';
 import { MobileLayout } from './layouts/MobileLayout';
 import LandingPage from './pages/LandingPage';
+import LaunchChecklist from './pages/LaunchChecklist';
 // User screens
 import UserHome from './pages/user/UserHome';
 import AIHub from './pages/user/AIHub';
@@ -29,6 +30,7 @@ export const router = createBrowserRouter([
     Component: MobileLayout,
     children: [
       { index: true, Component: LandingPage },
+      { path: 'launch-checklist', Component: LaunchChecklist },
       // User Mode
       { path: 'user/home', Component: UserHome },
       { path: 'user/ai', Component: AIHub },
