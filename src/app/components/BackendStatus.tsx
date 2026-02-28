@@ -1,11 +1,17 @@
 import React from 'react';
-import { Loader2, AlertTriangle, WifiOff } from 'lucide-react';
+import { Loader2, AlertTriangle, WifiOff, ArrowLeft } from 'lucide-react';
+import { setAppMode } from '../config/appMode';
 import type { AppMode } from '../config/appMode';
 
 interface BackendStatusProps {
   status: 'connecting' | 'connected' | 'unavailable';
   appMode: AppMode;
   retryCount?: number;
+}
+
+function goToModeSelector() {
+  setAppMode('demo');
+  window.location.href = '/';
 }
 
 export function BackendStatus({ status, appMode, retryCount = 0 }: BackendStatusProps) {
@@ -17,11 +23,18 @@ export function BackendStatus({ status, appMode, retryCount = 0 }: BackendStatus
         <div className="text-center p-8 max-w-[280px]">
           <Loader2 className="w-10 h-10 text-[#0F5132] animate-spin mx-auto mb-4" />
           <h3 className="text-sm font-semibold text-[#0B3D2E] mb-1">Conectando al backend...</h3>
-          <p className="text-xs text-[#6B7280]">
+          <p className="text-xs text-[#6B7280] mb-2">
             {retryCount > 0
               ? `Intento ${retryCount}... El servidor esta iniciando.`
               : 'Verificando conexion con el servidor.'}
           </p>
+          <button
+            onClick={goToModeSelector}
+            className="text-xs text-[#6B7280] hover:text-[#0F5132] underline underline-offset-2 mt-2 inline-flex items-center gap-1 transition-colors"
+          >
+            <ArrowLeft size={12} />
+            Volver a seleccion de modos
+          </button>
         </div>
       </div>
     );
@@ -48,12 +61,21 @@ export function BackendStatus({ status, appMode, retryCount = 0 }: BackendStatus
               </p>
             </>
           )}
-          <button
-            onClick={() => window.location.reload()}
-            className="text-xs px-4 py-2 bg-[#0F5132] text-white rounded-lg hover:bg-[#0B3D2E] transition-colors"
-          >
-            Reintentar
-          </button>
+          <div className="flex flex-col gap-2 items-center">
+            <button
+              onClick={() => window.location.reload()}
+              className="text-xs px-4 py-2 bg-[#0F5132] text-white rounded-lg hover:bg-[#0B3D2E] transition-colors"
+            >
+              Reintentar
+            </button>
+            <button
+              onClick={goToModeSelector}
+              className="text-xs px-4 py-2 text-[#6B7280] hover:text-[#0F5132] underline underline-offset-2 inline-flex items-center gap-1 transition-colors"
+            >
+              <ArrowLeft size={12} />
+              Volver a seleccion de modos
+            </button>
+          </div>
         </div>
       </div>
     );
