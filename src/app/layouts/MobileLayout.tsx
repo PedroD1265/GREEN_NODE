@@ -1,8 +1,8 @@
 import React from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router';
 import { clsx } from 'clsx';
-import { Home, Bot, ClipboardList, Gift, Truck, List, User, MapPin } from 'lucide-react';
-import { getAppMode } from '../config/appMode';
+import { Home, Bot, ClipboardList, Gift, Truck, List, User, MapPin, ArrowLeft } from 'lucide-react';
+import { getAppMode, setAppMode } from '../config/appMode';
 import { modeDescriptions } from '../config/modeDescriptions';
 
 export function MobileLayout() {
@@ -25,7 +25,17 @@ export function MobileLayout() {
         "h-11 w-full flex items-center justify-between px-6 shrink-0",
         isUser ? "bg-[#0B3D2E] text-white" : isCollector ? "bg-[#0B5D6B] text-white" : "bg-white text-[#111827]"
       )}>
-        <span className="text-xs font-medium">9:41</span>
+        {!isLanding ? (
+          <button
+            onClick={() => { setAppMode(getAppMode()); window.location.href = '/'; }}
+            className="flex items-center gap-1 opacity-80 hover:opacity-100 transition-opacity"
+          >
+            <ArrowLeft size={12} />
+            <span className="text-[10px] font-medium">Modos</span>
+          </button>
+        ) : (
+          <span className="text-xs font-medium">9:41</span>
+        )}
         {!isLanding && (
           <span
             className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
