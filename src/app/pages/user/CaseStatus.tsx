@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { useApp } from '../../../context/AppContext';
 import { Button, Card, Badge, TimelineStepper } from '../../components/UI';
-import { ArrowLeft, Phone, MessageSquare, Shield, Key, Star, MapPin, Camera } from 'lucide-react';
+import { ArrowLeft, Phone, MessageSquare, Shield, Key, Star, MapPin, Camera, CheckCircle, Loader2 } from 'lucide-react';
 import { COLLECTORS } from '../../../data/mockData';
+import { api } from '../../../lib/api';
 import { toast } from 'sonner';
 
 export default function CaseStatus() {
@@ -14,9 +15,28 @@ export default function CaseStatus() {
   const [showRating, setShowRating] = useState(false);
   const [rating, setRating] = useState(0);
   const [issues, setIssues] = useState<string[]>([]);
+  const [evidenceUrl, setEvidenceUrl] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const c = cases.find(x => x.id === id);
   if (!c) return <div className="p-5 text-center text-[#9CA3AF]">Caso no encontrado</div>;
+
+  const handleEvidenceUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const result = await api.uploadEvidence(c.id, file, 'photo');
+      setEvidenceUrl(result.url);
+      toast.success('Evidencia subida correctamente');
+    } catch (err) {
+      console.warn('[CaseStatus] Evidence upload failed:', err);
+      toast.error('No se pudo subir la evidencia');
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const steps = ['Pendiente', 'Aceptado', 'En camino', 'Completado'];
   const currentIdx = steps.indexOf(c.status);
@@ -62,11 +82,37 @@ export default function CaseStatus() {
           ))}
         </div>
 
-        {/* Photo evidence */}
-        <div className="border-2 border-dashed border-[#E5E7EB] rounded-xl p-4 flex items-center justify-center gap-2 text-[#9CA3AF] mb-4">
-          <Camera size={16} />
-          <span className="text-xs">Subir foto evidencia (opcional - demo)</span>
-        </div>
+        {/* Photo evidence — real upload */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={handleEvidenceUpload}
+        />
+        {evidenceUrl ? (
+          <div className="border-2 border-[#16A34A] rounded-xl p-2 flex items-center gap-3 mb-4 bg-[#F0FDF4] w-full max-w-[280px]">
+            <img src={evidenceUrl} alt="Evidencia" className="w-14 h-14 rounded-lg object-cover" />
+            <div className="flex-1 text-left">
+              <div className="flex items-center gap-1 text-xs font-medium text-[#16A34A]">
+                <CheckCircle size={12} /> Evidencia subida
+              </div>
+              <p className="text-[10px] text-[#6B7280] mt-0.5 truncate">{evidenceUrl.split('/').pop()}</p>
+            </div>
+          </div>
+        ) : (
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
+            className="border-2 border-dashed border-[#E5E7EB] rounded-xl p-4 flex items-center justify-center gap-2 text-[#9CA3AF] mb-4 w-full max-w-[280px] hover:border-[#0F5132] hover:text-[#0F5132] transition-colors cursor-pointer"
+          >
+            {uploading ? (
+              <><Loader2 size={16} className="animate-spin" /><span className="text-xs">Subiendo...</span></>
+            ) : (
+              <><Camera size={16} /><span className="text-xs">Subir foto evidencia (opcional)</span></>
+            )}
+          </button>
+        )}
 
         <Button variant="primary" size="lg" onClick={async () => {
           if (rating > 0) {

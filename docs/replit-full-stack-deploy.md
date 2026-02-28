@@ -57,6 +57,19 @@ When `REPLIT_STORAGE_BUCKET` is set in Secrets (e.g. `evidence`), the server aut
 
 **Local dev:** Leave `REPLIT_STORAGE_BUCKET` unset — uses `./uploads/` directory automatically.
 
+## Evidence Upload — Verification Checklist
+
+1. **Login** as any user (FULL REPLIT mode)
+2. **Create or open a case** → advance to "Completado" status
+3. On the rating screen, click **"Subir foto evidencia"** → select an image
+4. Verify **toast** shows "Evidencia subida correctamente"
+5. Verify **thumbnail** appears with green border and filename
+6. Open **Network tab** → check `POST /api/cases/<id>/evidence` → 200 OK
+7. Check **Replit App Storage** panel → bucket `evidence` → object `evidence/<caseId>/...` exists
+8. Copy the returned URL path → open in browser (`/uploads/evidence/...`) → image loads
+
+Repeat for **collector side**: login as collector → Confirmar recojo → "Subir foto evidencia"
+
 ## Dev Mode (npm run dev)
 
 In development, `npm run dev` runs Vite (port 5000) and Express (port 3001) concurrently. Vite proxies `/api` and `/uploads` to Express. This is separate from the production setup above.

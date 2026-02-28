@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { useApp } from '../../../context/AppContext';
 import { Button, Card, Badge } from '../../components/UI';
-import { CheckCircle, Camera, Upload, Star, Key } from 'lucide-react';
+import { CheckCircle, Camera, Upload, Star, Key, Loader2 } from 'lucide-react';
+import { api } from '../../../lib/api';
 import { toast } from 'sonner';
 
 export default function PickupConfirmation() {
@@ -14,9 +15,28 @@ export default function PickupConfirmation() {
   const [pinError, setPinError] = useState(false);
   const [rating, setRating] = useState(0);
   const [issues, setIssues] = useState<string[]>([]);
+  const [evidenceUrl, setEvidenceUrl] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const c = cases.find(x => x.id === id);
   if (!c) return <div className="p-5 text-center text-[#9CA3AF]">Caso no encontrado</div>;
+
+  const handleEvidenceUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const result = await api.uploadEvidence(c.id, file, 'evidence');
+      setEvidenceUrl(result.url);
+      toast.success('Evidencia subida correctamente');
+    } catch (err) {
+      console.warn('[PickupConfirmation] Evidence upload failed:', err);
+      toast.error('No se pudo subir la evidencia');
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handlePinSubmit = () => {
     if (pinInput === c.pin) {
@@ -123,9 +143,8 @@ export default function PickupConfirmation() {
                 <button
                   key={tag}
                   onClick={() => setIssues(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag])}
-                  className={`px-3 py-1.5 rounded-full text-xs border ${
-                    issues.includes(tag) ? 'bg-[#FEE2E2] text-[#DC2626] border-[#DC2626]' : 'bg-white text-[#4B5563] border-[#E5E7EB]'
-                  }`}
+                  className={`px-3 py-1.5 rounded-full text-xs border ${issues.includes(tag) ? 'bg-[#FEE2E2] text-[#DC2626] border-[#DC2626]' : 'bg-white text-[#4B5563] border-[#E5E7EB]'
+                    }`}
                 >
                   {tag}
                 </button>
@@ -166,10 +185,36 @@ export default function PickupConfirmation() {
 
         <Card>
           <p className="text-xs font-semibold text-[#111827] mb-3">Foto evidencia (opcional)</p>
-          <div className="border-2 border-dashed border-[#E5E7EB] rounded-xl p-8 flex flex-col items-center justify-center gap-2 text-[#9CA3AF]">
-            <Upload size={24} />
-            <span className="text-xs">Subir foto (demo)</span>
-          </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleEvidenceUpload}
+          />
+          {evidenceUrl ? (
+            <div className="border-2 border-[#16A34A] rounded-xl p-3 flex items-center gap-3 bg-[#F0FDF4]">
+              <img src={evidenceUrl} alt="Evidencia" className="w-16 h-16 rounded-lg object-cover" />
+              <div className="flex-1">
+                <div className="flex items-center gap-1 text-xs font-medium text-[#16A34A]">
+                  <CheckCircle size={12} /> Evidencia subida
+                </div>
+                <p className="text-[10px] text-[#6B7280] mt-0.5 truncate">{evidenceUrl.split('/').pop()}</p>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              className="w-full border-2 border-dashed border-[#E5E7EB] rounded-xl p-8 flex flex-col items-center justify-center gap-2 text-[#9CA3AF] hover:border-[#0B5D6B] hover:text-[#0B5D6B] transition-colors cursor-pointer"
+            >
+              {uploading ? (
+                <><Loader2 size={24} className="animate-spin" /><span className="text-xs">Subiendo...</span></>
+              ) : (
+                <><Upload size={24} /><span className="text-xs">Subir foto evidencia</span></>
+              )}
+            </button>
+          )}
         </Card>
 
         <div className="bg-[#DFF3E7] p-4 rounded-2xl">
