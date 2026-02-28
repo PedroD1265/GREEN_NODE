@@ -42,3 +42,6 @@ deploymentTarget = "cloudrun"
 build = ["npm", "run", "build"]
 publicDir = "dist"
 run = ["sh", "-c", "npm run start"]
+
+[objectStorage]
+defaultBucketID = "replit-objstore-b4ba7b5d-ff24-4e89-a582-0f1a12116036"
