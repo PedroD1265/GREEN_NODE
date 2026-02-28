@@ -15,6 +15,8 @@ interface AppContextType {
   appMode: AppMode;
   backendStatus: BackendStatus;
   retryCount: number;
+  maxRetries: number;
+  retryBackend: () => void;
 
   userPoints: number;
   userLevel: UserLevel;
@@ -49,7 +51,7 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-const MAX_RETRIES = 5;
+export const MAX_RETRIES = 5;
 const RETRY_BASE_MS = 1000;
 
 async function waitForBackend(maxRetries: number, onRetry: (n: number) => void, appMode?: string): Promise<boolean> {
@@ -149,38 +151,45 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
 
-      const connected = await waitForBackend(MAX_RETRIES, (n) => setRetryCount(n), appMode);
-      if (!connected) {
-        setBackendStatus('unavailable');
-        if (appMode === 'replit') {
-          console.error('[AppContext] Backend unavailable in FULL REPLIT mode');
-        }
-        return;
-      }
-
-      setBackendStatus('connected');
-      setRetryCount(0);
-
-      const token = getAuthToken();
-      if (token) {
-        try {
-          const user = await api.getMe();
-          setIsLoggedIn(true);
-          setUserName(user.name);
-          setUserId(user.id);
-          setUserPoints(user.points);
-          await refreshCases();
-        } catch {
-          setAuthToken(null);
-          await loginAs('user');
-        }
-      } else {
-        await loginAs('user');
-      }
+      await connectToBackend();
     };
 
     init();
   }, []);
+
+  const connectToBackend = useCallback(async () => {
+    setBackendStatus('connecting');
+    setRetryCount(0);
+
+    const connected = await waitForBackend(MAX_RETRIES, (n) => setRetryCount(n), appMode);
+    if (!connected) {
+      setBackendStatus('unavailable');
+      if (appMode === 'replit') {
+        console.error('[AppContext] Backend unavailable in FULL REPLIT mode');
+      }
+      return;
+    }
+
+    setBackendStatus('connected');
+    setRetryCount(0);
+
+    const token = getAuthToken();
+    if (token) {
+      try {
+        const user = await api.getMe();
+        setIsLoggedIn(true);
+        setUserName(user.name);
+        setUserId(user.id);
+        setUserPoints(user.points);
+        await refreshCases();
+      } catch {
+        setAuthToken(null);
+        await loginAs('user');
+      }
+    } else {
+      await loginAs('user');
+    }
+  }, [appMode, loginAs, refreshCases]);
 
   const addCase = async (c: Omit<PickupCase, 'id' | 'createdAt'>): Promise<string> => {
     try {
@@ -211,12 +220,12 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   const updateCaseStatus = (id: string, status: CaseStatus) => {
     setCases(prev => prev.map(c => c.id === id ? { ...c, status } : c));
-    api.updateCase(id, { status }).then(() => refreshCases()).catch(() => {});
+    api.updateCase(id, { status }).then(() => refreshCases()).catch(() => { });
   };
 
   const addPoints = (p: number) => {
     setUserPoints(prev => prev + p);
-    api.updatePoints(p).catch(() => {});
+    api.updatePoints(p).catch(() => { });
   };
 
   const acceptCase = (id: string) => {
@@ -230,12 +239,12 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       collectorName: 'EcoCocha',
       addressVisible: true,
       address: 'Av. Heroinas #890, Centro',
-    }).then(() => refreshCases()).catch(() => {});
+    }).then(() => refreshCases()).catch(() => { });
   };
 
   const completeCase = (id: string) => {
     setCases(prev => prev.map(c => c.id === id ? { ...c, status: 'Completado' as CaseStatus } : c));
-    api.updateCase(id, { status: 'Completado' }).then(() => refreshCases()).catch(() => {});
+    api.updateCase(id, { status: 'Completado' }).then(() => refreshCases()).catch(() => { });
   };
 
   const collectorRequests = cases.filter(c =>
@@ -270,7 +279,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   return (
     <AppContext.Provider value={{
       mode, setMode,
-      appMode, backendStatus, retryCount,
+      appMode, backendStatus, retryCount, maxRetries: MAX_RETRIES, retryBackend: connectToBackend,
       userPoints, userLevel, userName, userId,
       cases,
       addCase, updateCaseStatus, addPoints,
@@ -278,7 +287,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       collectorAutoAccept: autoAccept,
       toggleAutoAccept: () => {
         setAutoAccept(p => !p);
-        api.updateCollector('col-3', { autoAccept: !autoAccept }).catch(() => {});
+        api.updateCollector('col-3', { autoAccept: !autoAccept }).catch(() => { });
       },
       collectorRequests,
       acceptCase, completeCase,

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Loader2, AlertTriangle, WifiOff, ArrowLeft } from 'lucide-react';
+import { Loader2, AlertTriangle, WifiOff, ArrowLeft, Play } from 'lucide-react';
 import { setAppMode } from '../config/appMode';
 import type { AppMode } from '../config/appMode';
 
@@ -7,6 +7,8 @@ interface BackendStatusProps {
   status: 'connecting' | 'connected' | 'unavailable';
   appMode: AppMode;
   retryCount?: number;
+  maxRetries?: number;
+  onRetry?: () => void;
 }
 
 function goToModeSelector() {
@@ -14,7 +16,7 @@ function goToModeSelector() {
   window.location.href = '/';
 }
 
-export function BackendStatus({ status, appMode, retryCount = 0 }: BackendStatusProps) {
+export function BackendStatus({ status, appMode, retryCount = 0, maxRetries = 5, onRetry }: BackendStatusProps) {
   if (appMode === 'demo' || status === 'connected') return null;
 
   if (status === 'connecting') {
@@ -25,7 +27,7 @@ export function BackendStatus({ status, appMode, retryCount = 0 }: BackendStatus
           <h3 className="text-sm font-semibold text-[#0B3D2E] mb-1">Conectando al backend...</h3>
           <p className="text-xs text-[#6B7280] mb-2">
             {retryCount > 0
-              ? `Intento ${retryCount}... El servidor esta iniciando.`
+              ? `Intento ${retryCount}/${maxRetries}... El servidor esta iniciando.`
               : 'Verificando conexion con el servidor.'}
           </p>
           <button
@@ -56,24 +58,33 @@ export function BackendStatus({ status, appMode, retryCount = 0 }: BackendStatus
             <>
               <WifiOff className="w-10 h-10 text-red-400 mx-auto mb-4" />
               <h3 className="text-sm font-semibold text-[#0B3D2E] mb-1">Backend no disponible</h3>
-              <p className="text-xs text-[#6B7280] mb-4">
-                No se pudo conectar al servidor. Intenta recargar la pagina o cambia a modo DEMO.
+              <p className="text-xs text-[#6B7280] mb-2">
+                No se pudo conectar despues de {maxRetries} intentos.
               </p>
             </>
           )}
           <div className="flex flex-col gap-2 items-center">
-            <button
-              onClick={() => window.location.reload()}
-              className="text-xs px-4 py-2 bg-[#0F5132] text-white rounded-lg hover:bg-[#0B3D2E] transition-colors"
-            >
-              Reintentar
-            </button>
+            {onRetry && (
+              <button
+                onClick={onRetry}
+                className="text-xs px-4 py-2 bg-[#0F5132] text-white rounded-lg hover:bg-[#0B3D2E] transition-colors"
+              >
+                Reintentar ({maxRetries} intentos)
+              </button>
+            )}
             <button
               onClick={goToModeSelector}
               className="text-xs px-4 py-2 text-[#6B7280] hover:text-[#0F5132] underline underline-offset-2 inline-flex items-center gap-1 transition-colors"
             >
               <ArrowLeft size={12} />
               Volver a seleccion de modos
+            </button>
+            <button
+              onClick={goToModeSelector}
+              className="text-xs px-4 py-2 text-amber-600 hover:text-amber-800 inline-flex items-center gap-1 transition-colors font-medium"
+            >
+              <Play size={12} />
+              Forzar modo DEMO
             </button>
           </div>
         </div>

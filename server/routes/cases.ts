@@ -15,20 +15,30 @@ function getUpload() {
   if (!fs.existsSync(tmpDir)) {
     fs.mkdirSync(tmpDir, { recursive: true });
   }
-  return multer({ dest: tmpDir });
+  return multer({ dest: tmpDir, limits: { fileSize: 5 * 1024 * 1024 } });
+}
+
+// Helper: check if user owns a case or is admin
+function canAccessCase(caseRow: any, req: AuthenticatedRequest): boolean {
+  if (!req.user) return false;
+  if (req.user.role === 'admin') return true;
+  return caseRow.userId === req.user.id || caseRow.collectorId === req.user.id;
 }
 
 router.post('/cases', requireAuth, (req: Request, res: Response) => {
   try {
     const db = getDb();
-    const { items, totalKg, incentive, scheduledTime, address, addressVisible, aiConfirmed, userLevel, userId, pin } = req.body;
+    const authReq = req as AuthenticatedRequest;
+    const { items, totalKg, incentive, scheduledTime, address, addressVisible, aiConfirmed, userLevel, pin } = req.body;
     const id = `CASE-${Date.now()}`;
     const pin4 = pin || Math.floor(1000 + Math.random() * 9000).toString();
+    // Always use the authenticated user's ID, ignore userId from body
+    const ownerId = authReq.user?.id || 'user-me';
 
     db.prepare(`
       INSERT INTO cases (id, userId, collectorId, collectorName, status, materialsJson, totalKg, incentive, scheduleJson, addressJson, addressVisible, aiConfirmed, pin4, userLevel, createdAt)
       VALUES (?, ?, '', '', 'Pendiente', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(id, userId || 'user-me', JSON.stringify(items || []), totalKg || 0, incentive || 'Efectivo', JSON.stringify(scheduledTime || ''), JSON.stringify(address || ''), addressVisible ? 1 : 0, aiConfirmed ? 1 : 0, pin4, userLevel || 'Bronce', Date.now());
+    `).run(id, ownerId, JSON.stringify(items || []), totalKg || 0, incentive || 'Efectivo', JSON.stringify(scheduledTime || ''), JSON.stringify(address || ''), addressVisible ? 1 : 0, aiConfirmed ? 1 : 0, pin4, userLevel || 'Bronce', Date.now());
 
     const created = db.prepare('SELECT * FROM cases WHERE id = ?').get(id) as any;
     res.status(201).json(formatCase(created));
@@ -37,20 +47,29 @@ router.post('/cases', requireAuth, (req: Request, res: Response) => {
   }
 });
 
-router.get('/cases', (req: Request, res: Response) => {
+router.get('/cases', requireAuth, (req: Request, res: Response) => {
   try {
     const db = getDb();
-    const userId = req.query.userId as string;
+    const authReq = req as AuthenticatedRequest;
     const status = req.query.status as string;
 
     let query = 'SELECT * FROM cases';
     const conditions: string[] = [];
     const params: any[] = [];
 
-    if (userId) {
-      conditions.push('userId = ?');
-      params.push(userId);
+    // Non-admin users can only see their own cases (as user or collector)
+    if (authReq.user?.role !== 'admin') {
+      conditions.push('(userId = ? OR collectorId = ?)');
+      params.push(authReq.user?.id || '', authReq.user?.id || '');
+    } else {
+      // Admin can optionally filter by userId
+      const userId = req.query.userId as string;
+      if (userId) {
+        conditions.push('userId = ?');
+        params.push(userId);
+      }
     }
+
     if (status) {
       conditions.push('status = ?');
       params.push(status);
@@ -68,12 +87,18 @@ router.get('/cases', (req: Request, res: Response) => {
   }
 });
 
-router.get('/cases/:id', (req: Request, res: Response) => {
+router.get('/cases/:id', requireAuth, (req: Request, res: Response) => {
   try {
     const db = getDb();
+    const authReq = req as AuthenticatedRequest;
     const c = db.prepare('SELECT * FROM cases WHERE id = ?').get(req.params.id) as any;
     if (!c) {
       res.status(404).json({ error: 'Case not found' });
+      return;
+    }
+    // Ownership check: user can see own cases, collector can see assigned cases, admin sees all
+    if (!canAccessCase(c, authReq)) {
+      res.status(403).json({ error: 'Access denied' });
       return;
     }
     res.json(formatCase(c));
@@ -85,9 +110,16 @@ router.get('/cases/:id', (req: Request, res: Response) => {
 router.patch('/cases/:id', requireAuth, (req: Request, res: Response) => {
   try {
     const db = getDb();
+    const authReq = req as AuthenticatedRequest;
     const c = db.prepare('SELECT * FROM cases WHERE id = ?').get(req.params.id) as any;
     if (!c) {
       res.status(404).json({ error: 'Case not found' });
+      return;
+    }
+
+    // Ownership check
+    if (!canAccessCase(c, authReq)) {
+      res.status(403).json({ error: 'Access denied' });
       return;
     }
 
@@ -145,9 +177,14 @@ router.patch('/cases/:id', requireAuth, (req: Request, res: Response) => {
 router.post('/cases/:id/evidence', requireAuth, (req, res, next) => { getUpload().single('file')(req, res, next); }, async (req: Request, res: Response) => {
   try {
     const db = getDb();
+    const authReq = req as AuthenticatedRequest;
     const c = db.prepare('SELECT * FROM cases WHERE id = ?').get(req.params.id) as any;
     if (!c) {
       res.status(404).json({ error: 'Case not found' });
+      return;
+    }
+    if (!canAccessCase(c, authReq)) {
+      res.status(403).json({ error: 'Access denied' });
       return;
     }
     if (!req.file) {
@@ -170,9 +207,14 @@ router.post('/cases/:id/evidence', requireAuth, (req, res, next) => { getUpload(
 router.post('/cases/:id/rate', requireAuth, (req: Request, res: Response) => {
   try {
     const db = getDb();
+    const authReq = req as AuthenticatedRequest;
     const c = db.prepare('SELECT * FROM cases WHERE id = ?').get(req.params.id) as any;
     if (!c) {
       res.status(404).json({ error: 'Case not found' });
+      return;
+    }
+    if (!canAccessCase(c, authReq)) {
+      res.status(403).json({ error: 'Access denied' });
       return;
     }
 

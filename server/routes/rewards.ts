@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { getDb } from '../db';
-import { requireAuth } from '../middleware/auth';
+import { requireAuth, AuthenticatedRequest } from '../middleware/auth';
 
 const router = Router();
 
@@ -25,10 +25,13 @@ router.get('/rewards', (_req: Request, res: Response) => {
 router.post('/rewards/redeem', requireAuth, (req: Request, res: Response) => {
   try {
     const db = getDb();
-    const { userId, rewardId } = req.body;
+    const authReq = req as AuthenticatedRequest;
+    const { rewardId } = req.body;
+    // Use authenticated user ID, ignore userId from body
+    const userId = authReq.user?.id;
 
     if (!userId || !rewardId) {
-      res.status(400).json({ error: 'userId and rewardId are required' });
+      res.status(400).json({ error: 'rewardId is required' });
       return;
     }
 
