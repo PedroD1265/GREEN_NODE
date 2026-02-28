@@ -19,6 +19,11 @@ import rewardsRoutes from "./routes/rewards";
 import centersRoutes from "./routes/centers";
 import aiRoutes from "./routes/ai";
 
+import {
+  getObjectStorageClient,
+  REPLIT_STORAGE_BUCKET,
+} from "./providers/storage/replit";
+
 const config = getConfig();
 const app = express();
 
@@ -27,6 +32,40 @@ app.use(cors());
 app.use(express.json());
 app.use(requestLogger);
 
+// Serve uploaded evidence: Object Storage → local filesystem fallback
+app.use("/uploads", async (req, res, next) => {
+  // Try Object Storage first if configured
+  if (REPLIT_STORAGE_BUCKET) {
+    try {
+      const client = await getObjectStorageClient();
+      if (client) {
+        // Key is the path after /uploads/ (e.g. evidence/CASE-123/timestamp-photo.jpg)
+        const objectKey = req.path.startsWith("/") ? req.path.slice(1) : req.path;
+        if (objectKey) {
+          const { ok, value: data } = await client.downloadAsBytes(objectKey);
+          if (ok && data) {
+            const ext = path.extname(objectKey).toLowerCase();
+            const mimeMap: Record<string, string> = {
+              ".jpg": "image/jpeg",
+              ".jpeg": "image/jpeg",
+              ".png": "image/png",
+              ".gif": "image/gif",
+              ".webp": "image/webp",
+              ".pdf": "application/pdf",
+            };
+            res.setHeader("Content-Type", mimeMap[ext] || "application/octet-stream");
+            res.setHeader("Cache-Control", "public, max-age=86400");
+            return res.send(Buffer.from(data));
+          }
+        }
+      }
+    } catch {
+      // Fall through to static serving
+    }
+  }
+  // Fallback: serve from local filesystem
+  return next();
+});
 app.use("/uploads", express.static(path.resolve(config.uploadsDir)));
 
 // API routes

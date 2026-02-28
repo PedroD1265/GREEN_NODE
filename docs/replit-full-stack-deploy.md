@@ -42,6 +42,21 @@ The server reads port in this order:
 | Run command | `npm run start` |
 | Port | Leave default (server auto-detects `$PORT`) |
 
+## Object Storage (evidence uploads)
+
+When `REPLIT_STORAGE_BUCKET` is set in Secrets (e.g. `evidence`), the server automatically stores uploaded evidence files in Replit App Storage instead of the local filesystem.
+
+| Secret | Description |
+|---|---|
+| `REPLIT_STORAGE_BUCKET` | Bucket name created in Replit App Storage (e.g. `evidence`) |
+
+**How it works:**
+- Upload: `POST /api/cases/:id/evidence` → multer receives file → stored in Object Storage under key `evidence/<caseId>/<timestamp>-<kind>.<ext>`.
+- Serve: `GET /uploads/evidence/<caseId>/...` → server fetches from Object Storage and streams to browser.
+- Fallback: If Object Storage is not configured or fails, files are stored/served from `./uploads/` (local filesystem).
+
+**Local dev:** Leave `REPLIT_STORAGE_BUCKET` unset — uses `./uploads/` directory automatically.
+
 ## Dev Mode (npm run dev)
 
 In development, `npm run dev` runs Vite (port 5000) and Express (port 3001) concurrently. Vite proxies `/api` and `/uploads` to Express. This is separate from the production setup above.
