@@ -1,133 +1,186 @@
-# GREEN NODE
+<p align="center">
+  <img src="docs/assets/green-node-logo.png" width="320" alt="GREEN NODE logo" />
+</p>
 
-Plataforma de reciclaje que conecta generadores de residuos con recolectores verificados en Cochabamba, Bolivia.
+<h3 align="center">Reciclaje inteligente para Cochabamba 🌿</h3>
+<p align="center">Conecta hogares y comercios con recolectores verificados de material reciclable.</p>
 
-## Quick Start
+---
+
+## ¿Qué es GREEN NODE?
+
+GREEN NODE resuelve dos problemas reales en Cochabamba:
+
+1. **Confusión sobre qué se recicla** — muchas personas no saben cómo clasificar residuos ni dónde llevarlos.
+2. **Coordinación desorganizada de recojos** — no existe un canal simple para conectar a quien genera residuos con quien los recolecta.
+
+La app conecta **generadores** (hogares/comercios) con **recolectores verificados**, usando un flujo guiado, asistencia de IA, y un sistema de confianza con PIN + evidencia.
+
+---
+
+## ¿Cómo funciona?
+
+### 🌿 Usuario (genera residuos)
+
+- Toma fotos del material → la IA lo clasifica (material, categoría, confianza, tips)
+- Crea un pedido de recojo: elige material, cantidad, horario, incentivo (efectivo o puntos)
+- La app sugiere recolectores verificados ordenados por compatibilidad, rating y tarifas
+- Sigue el caso en tiempo real: Pendiente → Aceptado → En camino → Completado
+- Muestra un **PIN de 4 dígitos** al recolector para cerrar el caso de forma segura
+- Gana puntos y canjea recompensas (recargas, cupones, productos eco)
+
+### 🚛 Recolector (recoge material)
+
+- Se registra con tipo (Independiente / Empresa), materiales, tarifas y horarios
+- Recibe solicitudes con fotos, materiales, kg estimado y dirección
+- Acepta, genera ruta, ingresa PIN del usuario al llegar
+- Sube foto de evidencia y califica al usuario
+
+### 🔒 Confianza y seguridad
+
+- **Dirección protegida** hasta que un recolector verificado acepta el caso
+- **PIN de 4 dígitos** para confirmar entrega (evita fraude)
+- **Foto de evidencia** al completar (trazabilidad)
+- **Sistema de reputación** — niveles Bronce → Plata → Oro
+
+---
+
+## Features
+
+- ✅ Clasificación de residuos por IA (5 categorías + 15 materiales)
+- ✅ Wizard de creación de caso (manual o guiado por IA)
+- ✅ Matching de recolectores con scoring automático
+- ✅ Seguimiento de casos en tiempo real
+- ✅ Sistema de puntos y recompensas canjeables
+- ✅ Mapa de centros de acopio de Cochabamba
+- ✅ Onboarding de recolector con verificación
+- ✅ 3 modos de operación: DEMO / FULL REPLIT / REAL
+- ✅ Backend completo con API REST, auth JWT, uploads
+- ✅ Provider factory para auth, storage, AI (extensible)
+
+---
+
+## Tech Stack
+
+| Capa | Tecnología |
+|---|---|
+| Frontend | React 18 · Vite 6 · TypeScript · Tailwind CSS 4 · React Router 7 |
+| UI | shadcn/ui · Lucide Icons · Sonner (toasts) |
+| Backend | Node.js · Express 5 · tsx |
+| DB | SQLite (better-sqlite3) — preparado para Postgres |
+| Auth | JWT (jsonwebtoken) — preparado para Replit Auth |
+| Uploads | multer + filesystem — preparado para Replit Object Storage |
+| IA | Mock provider funcional — stubs para OpenAI / Azure OpenAI |
+
+---
+
+## Correr localmente (dev)
 
 ```bash
+# Instalar dependencias
 npm install
+
+# Iniciar frontend + backend concurrentes
 npm run dev
 ```
 
-Abre el navegador en `http://localhost:5000`
+Esto levanta:
+- **Vite** (frontend dev server) con hot reload
+- **Express** (API backend) con proxy automático desde Vite
 
-## Modos de Operacion
+Abrir la URL que muestre la terminal (generalmente `http://localhost:5000`).
 
-GREEN NODE soporta tres modos, seleccionables desde la Landing Page:
+---
 
-### Modo DEMO (default)
-Todo funciona sin credenciales externas. Datos seed, IA mock, auth por rol.
-Si el backend no esta disponible, usa datos mock como fallback.
+## Ejecución tipo producción
 
-### Modo FULL REPLIT
-Backend completo con DB SQLite/PostgreSQL. Datos persistentes.
-Requiere que el servidor Express este corriendo. Sin fallback a mock.
-Ver `docs/replit-setup.md` para configuracion.
+```bash
+# Generar build de frontend
+npm run build
 
-### Modo REAL
-Proveedores externos (Supabase para DB/Auth/Storage, IA externa).
-Requiere variables de entorno configuradas:
-```
-APP_MODE=real
-SUPABASE_URL=https://xxx.supabase.co
-SUPABASE_ANON_KEY=...
-SUPABASE_SERVICE_ROLE_KEY=...
-SUPABASE_BUCKET=evidence
-EXTERNAL_AI_API_KEY=...
-EXTERNAL_AI_ENDPOINT=...
-```
-Ver `docs/real-launch-supabase.md` para la guia completa.
-
-### Cambiar de modo
-1. En la Landing Page, seleccionar uno de los tres botones de modo
-2. O configurar `APP_MODE=demo|replit|real` como variable de entorno
-3. Ver `docs/modes.md` para detalles de cada modo
-
-## Scripts
-
-| Comando | Descripcion |
-|---------|-------------|
-| `npm run dev` | Inicia frontend (5000) + backend (3001) |
-| `npm run build` | Build de produccion del frontend |
-| `npm run dev:frontend` | Solo frontend |
-| `npm run dev:backend` | Solo backend |
-| `npm run db:seed` | Seed de datos en la base de datos |
-| `npm run db:reset` | Reset de DB + re-seed |
-
-## Arquitectura
-
-```
-Frontend: React + TypeScript + Vite + Tailwind + React Router
-Backend:  Express + SQLite (better-sqlite3)
-Providers: Storage, AI, Auth (demo/real swappable)
+# Iniciar servidor full-stack (API + frontend en un solo puerto)
+npm run start
 ```
 
-Ver `docs/architecture.md` para detalles.
+El servidor Express sirve:
+- `/api/*` → rutas de la API REST
+- `/uploads/*` → archivos de evidencia
+- `/*` → frontend (SPA fallback a `dist/index.html`)
 
-## Estructura del Proyecto
+---
+
+## Deploy en Replit
+
+| Setting | Valor |
+|---|---|
+| **Build command** | `npm run build` |
+| **Run command** | `npm run start` |
+| **Port** | Automático (el server lee `$PORT`) |
+
+### Variables de entorno (Secrets)
+
+| Variable | Descripción |
+|---|---|
+| `APP_MODE` | Modo de operación: `demo`, `replit`, o `real` |
+| `JWT_SECRET` | Clave secreta para tokens JWT (requerido en modo no-demo) |
+| `PORT` | Asignado automáticamente por Replit |
+
+> **Nota:** Los Secrets del Workspace NO se copian automáticamente al Published App / Deployment. Deben duplicarse manualmente en la configuración del deploy.
+
+---
+
+## Estructura del proyecto
 
 ```
-src/                    # Frontend React
-  app/pages/            # Paginas por rol (user/, collector/)
-  app/components/       # Componentes UI
-  context/              # AppContext (estado global)
-  lib/api.ts            # Cliente API
-  data/mockData.ts      # Datos mock + tipos
-
-server/                 # Backend Express
-  db/                   # SQLite (init, seed, provider)
-  providers/            # Storage, AI, Auth
-  routes/               # Endpoints API
-  middleware/            # Logger, error handler
-
-docs/                   # Documentacion
-  architecture.md       # Arquitectura demo/real
-  data-model.md         # Modelo de datos
-  api-reference.md      # Referencia API
-  microsoft-integration.md  # Guia Microsoft Azure
+├── src/                    # Frontend React
+│   ├── app/pages/          # Pantallas (21 screens)
+│   ├── app/components/     # Componentes reutilizables
+│   ├── context/            # Estado global (AppContext)
+│   └── lib/                # API client
+├── server/                 # Backend Express
+│   ├── routes/             # Endpoints API
+│   ├── providers/          # Auth, Storage, AI (factory pattern)
+│   ├── db/                 # Schema SQLite, seed, reset
+│   └── middleware/         # Auth JWT, logging, errors
+├── docs/                   # Documentación técnica
+├── dist/                   # Build de producción (generado)
+└── uploads/                # Evidencia de recojos (generado)
 ```
 
-## Smoke Test - Usuario (10 pasos)
+---
 
-1. Abrir la app y ver Landing Page con "MODO DEMO"
-2. Click "Entrar como Usuario" - Dashboard con puntos (1250)
-3. Navegar a "Mis Casos" - Ver casos existentes (seeded)
-4. Click en un caso - Ver seguimiento con timeline y PIN
-5. Ir a "Crear Pedido Manual" - Seleccionar PET
-6. Completar los 5 pasos - Enviar solicitud
-7. Ver el nuevo caso creado en "Mis Casos"
-8. Ir a "Recompensas" - Ver catalogo y puntos
-9. Canjear "Recarga movil Bs 10" (100 pts) - Toast de confirmacion
-10. Verificar que los puntos se descontaron
+## Modos de operación
 
-## Smoke Test - Recolector (10 pasos)
+| Modo | Backend | DB | IA | Para qué |
+|---|---|---|---|---|
+| **DEMO** | Opcional (funciona sin él) | Mock local | Mock | Probar la UI sin infraestructura |
+| **FULL REPLIT** | Requerido | SQLite real | Mock | Flujo completo con persistencia |
+| **REAL** | Requerido | Postgres/Supabase | OpenAI/Azure | Producción real (stubs preparados) |
 
-1. Volver al Landing - Click "Entrar como Recolector"
-2. Completar onboarding de EcoCocha
-3. Ver Dashboard del recolector - Solicitudes pendientes
-4. Ir a "Solicitudes" - Ver lista de casos
-5. Click en una solicitud pendiente - Ver detalle
-6. Click "Aceptar recojo" - Status cambia a "Aceptado"
-7. Click "Iniciar ruta" - Ver mapa de ruta
-8. Ir a confirmacion - Ingresar PIN de 4 digitos
-9. Completar caso - Calificar al usuario
-10. Volver al Dashboard - Verificar actualizacion
+---
 
-## Known Limitations
+## Roadmap
 
-- Azure providers tienen implementaciones stub (marcadas con TODO)
-- OAuth real no implementado en Replit (usar demo auth)
-- Mapa es mock (no integracion real con mapas)
-- Fotos de camara son simuladas en la interfaz
-- Sin WebSocket para actualizaciones en tiempo real
-- Base de datos SQLite (no apta para produccion multi-servidor)
+- 🔜 Integración con **Replit Object Storage** para uploads/evidencia
+- 🔜 Integración con **Replit Auth** (headers `X-Replit-User-*`)
+- 🔜 Provider de IA real (Azure OpenAI / Gemini) con costo mínimo
+- 🔜 Migración de DB a **Postgres** (Replit Database o Supabase) para escala
+- 🔜 Tests automatizados (smoke + E2E)
+- 🔜 PWA + notificaciones push
 
-## Documentacion
+---
 
-- [Modos de Operacion](docs/modes.md)
-- [Arquitectura](docs/architecture.md)
-- [Modelo de Datos](docs/data-model.md)
-- [Referencia API](docs/api-reference.md)
-- [Setup en Replit](docs/replit-setup.md)
-- [Lanzamiento con Supabase](docs/real-launch-supabase.md)
-- [Integracion Microsoft](docs/microsoft-integration.md)
+## Contribuir
+
+GREEN NODE es un proyecto de impacto social para Cochabamba. Si quieres contribuir:
+
+1. Revisa los [docs/](docs/) para entender la arquitectura
+2. Los cambios deben ser **aditivos y mínimos** — no refactors grandes
+3. Mantén compatibilidad con los 3 modos (DEMO / REPLIT / REAL)
+4. Prueba que `npm run build` pase antes de hacer PR
+
+---
+
+<p align="center">
+  Hecho con 💚 para Cochabamba, Bolivia
+</p>
