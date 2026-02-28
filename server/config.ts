@@ -39,7 +39,7 @@ export function getConfig(): AppConfig {
     aiProvider: (process.env.AI_PROVIDER || d.ai) as AIType,
     authMode: (process.env.AUTH_MODE || d.auth) as AuthType,
     dbType: (process.env.DB_TYPE || d.db) as DBType,
-    port: parseInt(process.env.API_PORT || '3001', 10),
+    port: parseInt(process.env.PORT || process.env.API_PORT || '3001', 10),
     dbPath: process.env.DB_PATH || './data/green-node.sqlite',
     uploadsDir: process.env.UPLOADS_DIR || './uploads',
     jwtSecret: process.env.JWT_SECRET || 'green-node-demo-secret-change-in-production',
